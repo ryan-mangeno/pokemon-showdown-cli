@@ -11,6 +11,12 @@ file(GLOB_RECURSE SRC_FILES "${CMAKE_SOURCE_DIR}/src/*.cpp")
 
 set(VENDOR_DIR "${CMAKE_SOURCE_DIR}/vendor")
 set(JSON_INC   "${VENDOR_DIR}/nlohmann/include")
+set(SPDLOG_INC "${VENDOR_DIR}/spdlog/include")
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Debug build: defining PK_DEBUG macro")
+    add_compile_definitions(PK_DEBUG)
+endif()
 
 add_executable(ps-cli ${SRC_FILES})
 
@@ -21,6 +27,7 @@ target_include_directories(ps-cli
           ${CMAKE_SOURCE_DIR}/src
           ${VENDOR_DIR}
           ${JSON_INC}
+          ${SPDLOG_INC}
 )
 
 

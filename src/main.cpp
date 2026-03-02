@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 #include <net/sslcontext.h> 
-
+#include <net/connection.h>
 namespace beast     = boost::beast;
 namespace websocket = beast::websocket;
 namespace http      = beast::http;
@@ -13,15 +13,17 @@ using tcp = net::ip::tcp;
 
 #include <util/util.h>
 #include <util/json_loader.h>
+#include <core/logger.h>
 
 int main() {
-    
+
+    pkm::Logger::init();   
     auto [port, host, path] = pkm::ConfigLoader::load();
 
     net::io_context ioc;
     pkm::net::SSLContext& ssl_ctx = pkm::net::SSLContext::get();
     ssl_ctx.init();
-
+    pkm::net::resolve(ioc, host, port);
     tcp::resolver resolver(ioc);
     websocket::stream<beast::ssl_stream<beast::tcp_stream>> ws(ioc, ssl_ctx.native_ctx());
 

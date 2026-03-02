@@ -2,6 +2,7 @@
 
 #include "connection.h"
 
+#include <core/logger.h>
 
 namespace pkm::net {
     
@@ -10,12 +11,14 @@ namespace pkm::net {
             const std::string& host,
             const std::string& port) {
         
-        boost::beast::error_code ec;
+        boost::system::error_code ec;
         boost::asio::ip::tcp::resolver resolver(ioc);
         auto results = resolver.resolve(host, port, ec);
         if (ec) {
-            // TODO: log
+            PK_ERROR("Failed to resolve host {0} at port {1}: {2}", host, port, ec.message());
             return ec;
+        } else {
+            PK_INFO("Resolves host {0} at port {1}", host, port);
         }
         return results;
     }
