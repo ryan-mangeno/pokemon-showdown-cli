@@ -5,7 +5,7 @@
 namespace net = boost::asio;
 namespace ssl = net::ssl;
 
-namespace pkm {
+namespace pkm::net {
     
     bool SSLContext::init() {
         if (m_initialized) return true;

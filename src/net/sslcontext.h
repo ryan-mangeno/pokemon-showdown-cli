@@ -1,11 +1,11 @@
 #pragma once
 
 #include <core/defines.h>
+#include <boost/asio/ssl/context.hpp>
 
-#include <pkmpch.h>
-
-namespace pkm {
-    
+namespace pkm::net {
+   
+    // should be initialized once at startup and reused for every tls connection
     class SSLContext {
         public:
 

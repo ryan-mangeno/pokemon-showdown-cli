@@ -1,9 +1,8 @@
 #include "pkmpch.h"
 
-#include <net/sslcontext.h>
-
 #include <iostream>
 #include <string>
+#include <net/sslcontext.h> 
 
 namespace beast     = boost::beast;
 namespace websocket = beast::websocket;
@@ -18,7 +17,7 @@ int main() {
     const std::string path = "/showdown/websocket";
 
     net::io_context ioc;
-    pkm::SSLContext& ssl_ctx = pkm::SSLContext::get();
+    pkm::net::SSLContext& ssl_ctx = pkm::net::SSLContext::get();
     ssl_ctx.init();
 
     tcp::resolver resolver(ioc);
