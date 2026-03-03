@@ -14,6 +14,7 @@ using tcp = net::ip::tcp;
 #include <util/util.h>
 #include <util/json_loader.h>
 #include <core/logger.h>
+#include <net/connection.h>
 
 int main() {
 
@@ -29,28 +30,13 @@ int main() {
         return 1;
     }
     auto resolved = pkm::net::value(results);
-    int index = 0;
-    for (const auto& entry : resolved)
-    {
-        const auto& ep = entry.endpoint();
-
-        PK_INFO("Endpoint[{}]: {}:{} ({})",
-             index++,
-             ep.address().to_string(),
-             ep.port(),
-                ep.address().is_v4() ? "IPv4" : "IPv6");
-    }
     websocket::stream<beast::ssl_stream<beast::tcp_stream>> ws(ioc, ssl_ctx.native_ctx());
 
     // SNI
     SSL_set_tlsext_host_name(ws.next_layer().native_handle(), host.data());
 
     // Connect
-    beast::get_lowest_layer(ws).connect(resolved);
-    ws.next_layer().handshake(ssl::stream_base::client);
-    ws.handshake("play.pokemonshowdown.com", path);
-
-    std::cout << "Connected!\n";
+    pkm::net::connect(ws, resolved, host, path);
 
     // read first message, should be the challstr
     beast::flat_buffer buf;

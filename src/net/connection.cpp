@@ -27,8 +27,32 @@ namespace pkm::net {
     // takes the stream by ref and sets it up in place
     bool connect(WssStream& stream,
                  const boost::asio::ip::tcp::resolver::results_type& endpoints,
-                 const std::string& host) {
-        return true; 
+                 const std::string& host,
+                 const std::string& websocket) {
+        
+        boost::system::error_code connect_ec;
+        boost::beast::get_lowest_layer(stream).connect(endpoints, connect_ec);
+        if (connect_ec) {
+            PK_ERROR("Failed to connect to endpoint(s)!");
+            return false;
+        }
+
+        boost::system::error_code ssl_handshake_ec;
+        stream.next_layer().handshake(boost::asio::ssl::stream_base::client, ssl_handshake_ec);
+        if (ssl_handshake_ec) {
+            PK_ERROR("Failed to execute ssl handshake!");
+            return false;
+        }
+        
+        boost::system::error_code host_handshake_ec;
+        stream.handshake(host, websocket, host_handshake_ec);
+        if (host_handshake_ec) {
+            PK_ERROR("Failed to handshake with host!");
+            return false;
+        }
+        
+        PK_INFO("Connected to host: {0}", host);
+        return true;
     }    
 
     // WebSocket upgrade handshake

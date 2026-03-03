@@ -21,7 +21,8 @@ namespace pkm::net {
     // takes the stream by ref and sets it up in place
     bool connect(WssStream& stream,
                  const boost::asio::ip::tcp::resolver::results_type& endpoints,
-                 const std::string& host);
+                 const std::string& host,
+                 const std::string& websocket);
 
     // WebSocket upgrade handshake
     bool handshake(WssStream& stream,
