@@ -20,6 +20,7 @@ namespace pkm::net {
     }
 
     bool SSLContext::shutdown() {
+        m_initialized = false;
         return true;
     }
 

@@ -14,29 +14,14 @@ using tcp = net::ip::tcp;
 #include <util/util.h>
 #include <util/json_loader.h>
 #include <core/logger.h>
-#include <net/connection.h>
 #include <net/netconfig.h>
+#include <net/wsclient.h>
 
 int main() {
 
     pkm::Logger::init();
     pkm::net::NetConfig ncfg;
     pkm::JsonLoader::load(ncfg, NET_CONFIG_PATH.c_str());
-    auto [port, host, path] = ncfg;
-
-    pkm::net::SSLContext& ssl_ctx = pkm::net::SSLContext::get();
-    ssl_ctx.init();
-    
-    net::io_context ioc;
-    auto results = pkm::net::resolve(ioc, host, port);
-    if (!pkm::net::ok(results)) {
-        return 1;
-    }
-    auto resolved = pkm::net::value(results);
-    websocket::stream<beast::ssl_stream<beast::tcp_stream>> ws(ioc, ssl_ctx.native_ctx());
-
-    // SNI
-    SSL_set_tlsext_host_name(ws.next_layer().native_handle(), host.data());
 
     // Connect
     pkm::net::connect(ws, resolved, host, path);
@@ -49,5 +34,13 @@ int main() {
 
     beast::error_code ec;
     ws.close(websocket::close_code::normal, ec);
+        
+    pkm::net::WsClient client(ncfg);
+    
+    if (client.connect()) {
+        auto msg = client.receive();
+        std::cout << "Received: " << msg << std::endl;
+    }
+
     return 0;
 }
