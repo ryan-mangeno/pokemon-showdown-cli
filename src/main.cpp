@@ -1,17 +1,5 @@
 #include "pkmpch.h"
 
-#include <iostream>
-#include <string>
-#include <net/sslcontext.h> 
-#include <net/connection.h>
-namespace beast     = boost::beast;
-namespace websocket = beast::websocket;
-namespace http      = beast::http;
-namespace net       = boost::asio;
-namespace ssl       = net::ssl;
-using tcp = net::ip::tcp;
-
-#include <util/util.h>
 #include <util/json_loader.h>
 #include <core/logger.h>
 #include <net/netconfig.h>
