@@ -23,24 +23,12 @@ int main() {
     pkm::net::NetConfig ncfg;
     pkm::JsonLoader::load(ncfg, NET_CONFIG_PATH.c_str());
 
-    // Connect
-    pkm::net::connect(ws, resolved, host, path);
-
-    // read first message, should be the challstr
-    beast::flat_buffer buf;
-    ws.read(buf);
-    std::string msg = beast::buffers_to_string(buf.data());
-    std::cout << "Received:\n" << msg << "\n";
-
-    beast::error_code ec;
-    ws.close(websocket::close_code::normal, ec);
-        
     pkm::net::WsClient client(ncfg);
-    
     if (client.connect()) {
-        auto msg = client.receive();
-        std::cout << "Received: " << msg << std::endl;
+        PK_INFO("Recieved:\n{0}", client.receive());
     }
+
+    client.close();
 
     return 0;
 }

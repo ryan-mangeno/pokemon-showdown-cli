@@ -12,28 +12,27 @@
 
 namespace pkm::net {
     
-
-
     class WsClient {
         using ResolverResults = boost::asio::ip::tcp::resolver::results_type;
+        using IOc = boost::asio::io_context;
         public:
             WsClient(const NetConfig& config);
             ~WsClient();
 
             bool connect();
             void send(const std::string& message);
-            std::string recieve();
+            std::string receive();
             void close();
             
         private:
-            net::io_context m_ioc;
-            websocket::stream<beast::ssl_stream<beast::tcp_stream>> m_websocket;
+            IOc m_ioc;
+            Scope<WssStream> m_websocket;
             NetConfig m_config;
             ResolverResults m_endpoints;
 
             // TODO:
             // bool m_has_cached_endpoints;
-    }
+    };
 
 
 }
