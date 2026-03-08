@@ -15,7 +15,7 @@ namespace pkm::protocol {
     }
 
     std::vector<Message> parse(const std::string& raw) {
-        if (raw == "") return {};
+        if (raw.empty()) return {};
         
         std::vector<std::string> lines = split(raw, '\n');
         
