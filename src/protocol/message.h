@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "core/logger.h"
+
 namespace pkm::protocol {
     
     struct Message {
@@ -16,6 +18,14 @@ namespace pkm::protocol {
                 return empty;
             } else {
                 return args[i];
+            }
+        }
+
+        void print() const noexcept {
+            PK_INFO("Room ID: {}", room_id);
+            PK_INFO("Type: {}", type);
+            for (const std::string& arg : args) {
+                PK_INFO("{}", arg);
             }
         }
     };
