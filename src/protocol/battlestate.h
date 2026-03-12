@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+#include "message.h"
+#include "ident.h"
+
 namespace pkm::protocol {
 
     struct Pokemon {
@@ -16,29 +19,40 @@ namespace pkm::protocol {
         std::string status;       // burned, paralyzed etc
     };
 
-    
-    struct BattleState {
-        std::string room_id;
-        int turn;
-        
-        // your side
-        std::string your_name;
-        std::vector<Pokemon> your_team;
-        
-        // opponent side  
-        std::string opponent_name;
-        std::vector<Pokemon> opponent_team;
-        
-        // current available moves from request
-        struct MoveOption {
-            std::string name;
-            std::string id;
-            int pp;
-            int max_pp;
-            bool disabled;
-        };
-        std::vector<MoveOption> available_moves;
-        bool force_switch;
+    // current available moves from request
+    struct MoveOption {
+        std::string name;
+        std::string id;
+        int pp;
+        int max_pp;
+        bool disabled;
     };
     
+    class BattleState {
+        public:
+            void apply(const Message& msg);
+        
+            const Pokemon& active_pokemon() const;
+            inline const std::vector<Pokemon>& your_team() const noexcept { return m_your_team; };
+            inline const std::vector<Pokemon>& opponent_team() const noexcept { return m_opponent_team; };
+            inline const std::vector<MoveOption>& available_moves() const noexcept { return m_available_moves; };
+            int turn() const;
+        
+        private:
+            Pokemon* find_pokemon(const Ident& ident);
+
+            void apply_request(const Message& msg);
+            void apply_hp(const Message& msg);
+            void apply_faint(const Message& msg);
+            void apply_switch(const Message& msg);
+            
+            std::string m_room_id;
+            int m_turn;
+            std::string m_your_name;
+            std::string m_opponent_name;
+            std::vector<Pokemon> m_your_team;
+            std::vector<Pokemon> m_opponent_team;
+            std::vector<MoveOption> m_available_moves;
+            bool m_force_switch;
+    };
 }

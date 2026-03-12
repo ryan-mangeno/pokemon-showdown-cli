@@ -41,7 +41,7 @@ namespace pkm::protocol {
         if (m_ws->connect()) {
             m_connected = true;
             while (m_connected) {
-                auto msgs = pkm::protocol::parse(m_ws->receive());
+                auto msgs = parse_message(m_ws->receive());
                 for (auto& msg : msgs) {
                     dispatch(msg);
                 }

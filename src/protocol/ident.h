@@ -21,7 +21,6 @@ namespace pkm::protocol {
         ~Ident() = default;
     };
 
-    Ident parse_ident(const std::string& ident);
 
 }
 
