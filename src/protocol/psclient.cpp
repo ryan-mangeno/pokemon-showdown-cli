@@ -64,7 +64,6 @@ namespace pkm::protocol {
         PK_TRACE("On Update");
         PK_INFO("Username: {}", msg.args[0]);
         m_ws->send("|/search gen9randombattle");
-        msg.print();
     }
 
     void PsClient::on_chall_str(const Message& msg) {
@@ -101,7 +100,6 @@ namespace pkm::protocol {
         
         auto j = nlohmann::json::parse(msg.args[0]);
 
-        msg.print();
     
         if (j.contains("forceSwitch")) {
             auto& side = j["side"]["pokemon"];
