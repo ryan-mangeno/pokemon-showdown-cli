@@ -45,8 +45,13 @@ namespace pkm::protocol {
 
             std::string m_battle_room;
 
-            // Network thread  ->  SPSCQueue<Message>   ->  Main thread   (inbound)
-            // Main thread     ->  SPSCQueue<string>    ->  Network thread (outbound)
+            // at a high level, the networking thread reads inbound requests, main thread reads those
+            // and does proper parsing, formatting, input handling etc, then it sends 
+            // correlating networking requests to the network thread
+            // NOTE: networking thread and main thread both read and write to two spsc queues
+
+            // Network thread (sends)  ->  SPSCQueue<Message>   ->  Main thread    (reads) <inbound>
+            // Main thread    (sends)  ->  SPSCQueue<string>    ->  Network thread (reads) <outbound>
             pkm::core::SPSCQueue<Message>      m_inbound{256};
             pkm::core::SPSCQueue<std::string>  m_outbound{64};
             std::thread m_network_thread;

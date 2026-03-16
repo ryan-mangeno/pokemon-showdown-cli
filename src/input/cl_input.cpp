@@ -51,6 +51,8 @@ namespace pkm {
             // prompt user and read response
             PK_INFO("{}", prompt.c_str());
             std::string response;
+            // TODO: can result in zombie thread if time limit runs out
+            // this needs to be more modular
             if (std::getline(std::cin, response)) {
                 if (m_on_response) m_on_response(response);
             }
