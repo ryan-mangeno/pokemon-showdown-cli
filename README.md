@@ -28,3 +28,6 @@ make
 ```bash
 ./build/ps-cli
 ```
+
+## CLI 
+<img width="1338" height="1016" alt="Screenshot 2026-03-24 at 4 05 45 PM" src="https://github.com/user-attachments/assets/188611c6-48ef-43e3-ba7a-c006e9e007d7" />
