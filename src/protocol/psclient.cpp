@@ -57,7 +57,6 @@ namespace pkm::protocol {
             Message msg;
             if (m_inbound.pop(msg)) {
                 if (on_message) on_message(msg);
-                PK_TRACE("CLIENT: INBOUND >>> {}", msg.type);
                 dispatch(msg);
             }
         }
@@ -67,7 +66,7 @@ namespace pkm::protocol {
 
     void PsClient::login() {
         if (m_logged_in) {
-            // send chall str if we are already logged in
+            // TODO: send chall str if we are already logged in
         }
 
         const char* user = std::getenv("PS_USERNAME");
@@ -91,8 +90,21 @@ namespace pkm::protocol {
     }
 
     void PsClient::on_update_user(const Message& msg) {
-        PK_INFO("Username: {}", msg.args[0]);
-        send("|/search gen9randombattle");
+        std::string username = msg.args[0];
+        bool is_named = (msg.args[1] == "1");
+
+        PK_INFO("Username: {} | Authenticated: {}", username, is_named);
+
+        // only initiate a search if we are officially logged in
+        if (is_named) {
+            m_logged_in = true; 
+
+            if (!m_in_battle && !m_searching) {
+                PK_INFO("Login successful! Queueing for Gen 9 Random Battle...");
+                m_searching = true;
+                send("|/search gen9randombattle");
+            }
+        }
     }
 
     void PsClient::on_chall_str(const Message& msg) {
@@ -135,9 +147,12 @@ namespace pkm::protocol {
     void PsClient::on_win(const Message& msg) {
         PK_INFO("Winner: {}", msg.args[0]);
         m_connected = false;
+        send("|/leave " + m_battle_room); 
+        m_battle_room = "";
     }
 
     void PsClient::on_request(const Message& msg) {
+        if (msg.args.empty() || msg.args[0].empty()) return;
     }
 
     void PsClient::network_loop() {
@@ -151,7 +166,6 @@ namespace pkm::protocol {
     }
 
     void PsClient::send(const std::string& msg) {
-        PK_TRACE("CLIENT: OUTBOUND >>> {}", msg);
         m_ws->send(msg);
     }
 
