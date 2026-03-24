@@ -4,6 +4,9 @@ build/
 # env
 config/.env
 
+# logs
+pkm_shdwn.log
+
 # CMake generated files
 CMakeCache.txt
 CMakeFiles/

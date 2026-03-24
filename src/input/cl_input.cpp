@@ -47,9 +47,8 @@ namespace pkm {
             m_requested = false;
             lock.unlock();
 
-            PK_INFO("{}", prompt.c_str());
+            std::cout << prompt << std::flush;
 
-            // linenoise only active here, between start and stop
             char buf[1024];
             struct linenoiseState ls;
             linenoiseEditStart(&ls, -1, -1, buf, sizeof(buf), "> ");

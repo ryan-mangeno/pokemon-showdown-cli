@@ -78,19 +78,50 @@ namespace pkm {
     }
 
     void PsApp::on_battle_request(const protocol::Message& msg) {
-        std::string prompt = "Your turn!\n";
+        std::string dashboard = build_battle_ui();
+        m_input->request(dashboard);
+    }
+
+    std::string PsApp::build_battle_ui() {
+        std::stringstream ss;
+
+        ss << "\033[2J\033[1;1H"; 
+
+        ss << "=================================================\n";
+        ss << "  POKEMON SHOWDOWN CLI  | Room: " << m_battle_room << "\n";
+        ss << "=================================================\n\n";
+
+        // OPPONENT TEAM
+        ss << "--- OPPONENT TEAM ---\n";
+        for (const auto& p : m_state.opponent_team()) {
+            ss << (p.active ? " [ACTIVE] " : " [BENCH]  ") << p.name << "\n";
+        }
+        ss << "\n";
+
+        // YOUR TEAM
+        ss << "--- YOUR TEAM ---\n";
+        auto& team = m_state.your_team();
+        for (size_t i = 0; i < team.size(); i++) {
+            const auto& p = team[i];
+            ss << " [s" << (i+1) << "] " 
+               << (p.active ? "*ACTIVE* " : "         ")
+               << p.name << " (" << p.hp_current << "/" << p.hp_max << " HP)\n";
+        }
+        ss << "\n";
+
+        // AVAILABLE MOVES 
+        ss << "--- AVAILABLE ACTIONS ---\n";
         auto& moves = m_state.available_moves();
         for (size_t i = 0; i < moves.size(); i++) {
-            prompt += "[" + std::to_string(i+1) + "] " + moves[i].name;
-            prompt += " (" + std::to_string(moves[i].pp) + "/" + 
-                    std::to_string(moves[i].max_pp) + " pp)";
-            if (moves[i].disabled) prompt += " [DISABLED]";
-            prompt += "\n";
+            ss << " [" << (i+1) << "] " << moves[i].name 
+               << " (" << moves[i].pp << "/" << moves[i].max_pp << " PP)";
+            if (moves[i].disabled) ss << " [DISABLED]";
+            ss << "\n";
         }
         
-        // Add the team info options
-        prompt += "\n[5] Enemy Team Info\n[6] Your Team Info\n";
-        
-        m_input->request(prompt);
+        ss << "=================================================\n";
+        return ss.str();
     }
+
+    
 }

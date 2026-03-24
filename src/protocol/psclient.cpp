@@ -102,6 +102,7 @@ namespace pkm::protocol {
             if (!m_in_battle && !m_searching) {
                 PK_INFO("Login successful! Queueing for Gen 9 Random Battle...");
                 m_searching = true;
+                // TODO: let user decide when to search for battle
                 send("|/search gen9randombattle");
             }
         }

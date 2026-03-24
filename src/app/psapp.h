@@ -21,7 +21,8 @@ namespace pkm {
     private:
         void on_message(const protocol::Message& msg);
         void on_battle_request(const protocol::Message& msg);
-
+        std::string build_battle_ui();
+        
     private:
         Scope<protocol::PsClient>   m_client;
         Scope<Input>                m_input;
