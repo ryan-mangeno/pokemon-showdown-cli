@@ -28,8 +28,6 @@ namespace pkm::protocol {
             if (p.name == ident.name) return &p;
         }
 
-        PK_ERROR("Pokemon not found: {}", ident.name);
-
         return nullptr;
     }
 

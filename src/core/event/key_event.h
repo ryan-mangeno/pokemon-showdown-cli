@@ -8,15 +8,15 @@ namespace pkm {
 
 	class KeyEvent : public Event {
 	public:
-		inline int get_keycode() const { return m_KeyCode; }
+		inline int get_keycode() const { return m_keycode; }
 
 		EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
 
 	protected:
 		KeyEvent(int keycode)
-			: m_KeyCode(keycode) {}
+			: m_keycode(keycode) {}
 
-		int m_KeyCode;
+		int m_keycode;
 
 	};
 
@@ -24,14 +24,14 @@ namespace pkm {
 	class  KeyPressedEvent : public KeyEvent {
 	public:
 		KeyPressedEvent(int keycode, int repeatCount)
-			: KeyEvent(keycode), m_RepeatCount(repeatCount) {}
+			: KeyEvent(keycode), m_repeatcount(repeatCount) {}
 
-		inline int GetRepeatCount() const { return m_RepeatCount; }
+		inline int get_repeat_count() const { return m_repeatcount; }
 
 		std::string to_str() const override
 		{
 			std::stringstream ss;
-			ss << "KeyPressedEvent: " << m_KeyCode << " (" << m_RepeatCount << " repeats)";
+			ss << "KeyPressedEvent: " << m_keycode << " (" << m_repeatcount << " repeats)";
 			return ss.str();
 		}
 
@@ -39,7 +39,7 @@ namespace pkm {
 		
 
 	private:
-		int m_RepeatCount;
+		int m_repeatcount;
 	};
 	
 
@@ -53,7 +53,7 @@ namespace pkm {
 		std::string to_str() const override
 		{
 			std::stringstream ss;
-			ss << "KeyReleasedEvent: " << m_KeyCode;
+			ss << "KeyReleasedEvent: " << m_keycode;
 			return ss.str();
 		}
 
@@ -70,7 +70,7 @@ namespace pkm {
 		std::string to_str() const override
 		{
 			std::stringstream ss;
-			ss << "KeyTypedEvent: " << m_KeyCode;
+			ss << "KeyTypedEvent: " << m_keycode;
 			return ss.str();
 		}
 

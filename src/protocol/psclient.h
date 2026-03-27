@@ -6,6 +6,9 @@
 #include "message.h"
 
 #include <thread>
+#include <atomic>
+#include <functional>
+
 namespace pkm::protocol {
 
     class PsClient {
@@ -14,51 +17,28 @@ namespace pkm::protocol {
             ~PsClient() = default;
 
             bool init();
-            void shutdown();
-            void run();
-
+            void start();           // connect + spawn network thread, returns immediately
+            void stop();            // signal shutdown + join network thread
             void send(const std::string& msg);
+            bool poll(Message& out); // main thread calls this to drain inbound
 
-            // set by app
-            std::function<void(const protocol::Message&)> on_message;
-        
         private:
-            void login();
-
-            void dispatch(const Message& msg);
-            void on_update_user(const Message& msg);
-            void on_chall_str(const Message& msg);
-            void on_update_search(const Message& msg);
-            void on_battle(const Message& msg);
-            void on_win(const Message& msg);
-            void on_request(const Message& msg);
-
             void network_loop();
+            void on_chall_str(const Message& msg);   
+            void on_update_user(const Message& msg); 
 
         private:
             Ref<pkm::net::WsClient> m_ws;
-            
+
             bool m_initialized;
-            bool m_searching;
-            // TODO: both should be atomic + handle setting logic
-            bool m_connected;
+            std::atomic<bool> m_running;
             bool m_logged_in;
+            bool m_searching;
             bool m_in_battle;
-            
             std::string m_battle_room;
 
-            // at a high level, the networking thread reads inbound requests, main thread reads those
-            // and does proper parsing, formatting, input handling etc, then it sends 
-            // correlating networking requests to the network thread
-            // NOTE: networking thread and main thread both read and write to two spsc queues
-
-            // Network thread (sends)  ->  SPSCQueue<Message>   ->  Main thread    (reads) <inbound>
-            // Main thread    (sends)  ->  SPSCQueue<string>    ->  Network thread (reads) <outbound>
             pkm::SPSCQueue<Message>      m_inbound{256};
             pkm::SPSCQueue<std::string>  m_outbound{64};
             std::thread m_network_thread;
-
     };
-    
-
 }

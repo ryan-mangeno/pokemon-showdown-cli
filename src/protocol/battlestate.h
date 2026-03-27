@@ -33,6 +33,8 @@ namespace pkm::protocol {
             void apply(const Message& msg);
         
             const Pokemon& active_pokemon() const;
+
+            inline const std::string& get_battleroom() const noexcept { return m_room_id; }
             inline const std::vector<Pokemon>& your_team() const noexcept { return m_your_team; };
             inline const std::vector<Pokemon>& opponent_team() const noexcept { return m_opponent_team; };
             inline const std::vector<MoveOption>& available_moves() const noexcept { return m_available_moves; };

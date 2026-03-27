@@ -23,7 +23,7 @@ namespace pkm::protocol {
 
         void print() const noexcept {
             PK_INFO("Room ID: {}", room_id);
-            PK_INFO("Type: {}", type);
+            PK_INFO("Request Type: {}", type);
             for (const std::string& arg : args) {
                 PK_INFO("{}", arg);
             }

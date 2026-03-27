@@ -19,7 +19,6 @@ namespace pkm {
         
         void start() override;
         void stop() override;
-        void request(const std::string& prompt) override;
 
         inline void set_callback(const EventCallbackFn& callback) override {
             m_callback = callback;
@@ -36,7 +35,6 @@ namespace pkm {
         std::mutex m_mutex;
         std::condition_variable m_cv;
         std::atomic<bool> m_running{false};
-        std::atomic<bool> m_requested{false};
         std::string m_prompt;
     };
 }
