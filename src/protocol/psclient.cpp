@@ -82,6 +82,7 @@ namespace pkm::protocol {
     }
 
     void PsClient::send(const std::string& msg) {
+        PK_TRACE("Sending: {}", msg);
         m_ws->send(msg);
     }
 

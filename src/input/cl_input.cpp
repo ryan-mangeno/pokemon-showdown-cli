@@ -10,7 +10,7 @@
 namespace pkm {
 
     CLInput::CLInput()
-        : m_prompt(""), m_running(false) {}
+        : m_running(false) {}
 
     void CLInput::start() {
         m_running = true;
@@ -19,8 +19,15 @@ namespace pkm {
 
     void CLInput::stop() {
         m_running = false;
-        m_cv.notify_all();
         if (m_thread.joinable()) m_thread.join();
+    }
+
+    void CLInput::set_input_ui(const std::string& ui) {
+        {
+            std::lock_guard<std::mutex> lock(m_ui_mutex);
+            m_ui_buffer = ui;
+            m_ui_dirty = true;
+        }
     }
 
     void CLInput::run() {
@@ -28,8 +35,19 @@ namespace pkm {
         linenoiseHistorySetMaxLen(100);
 
         char buf[1024];
+        buf[0] = '\0';
         struct linenoiseState ls;
-        linenoiseEditStart(&ls, -1, -1, buf, sizeof(buf), "> ");
+
+        std::string active_prompt;
+    
+        // initial fetch
+        {
+            std::lock_guard<std::mutex> lock(m_ui_mutex);
+            active_prompt = m_ui_buffer;
+            m_ui_dirty = false;
+        }
+
+        linenoiseEditStart(&ls, -1, -1, buf, sizeof(buf), active_prompt.c_str());
 
         while (m_running) {
             fd_set readfds;
@@ -37,7 +55,9 @@ namespace pkm {
             FD_ZERO(&readfds);
             FD_SET(ls.ifd, &readfds);
 
-            if (select(ls.ifd + 1, &readfds, NULL, NULL, &tv) > 0) {
+            int retval = select(ls.ifd + 1, &readfds, NULL, NULL, &tv);
+
+            if (retval > 0) {
                 char* line = linenoiseEditFeed(&ls);
                 if (line != linenoiseEditMore) {
                     if (line) {
@@ -50,6 +70,19 @@ namespace pkm {
                     }
                     linenoiseEditStop(&ls);
                     linenoiseEditStart(&ls, -1, -1, buf, sizeof(buf), "> ");
+                }
+            } else {
+                // timeout, redraw ui if dirty
+                if (m_ui_dirty.load()) {
+                    std::string ui;
+                    {
+                        std::lock_guard<std::mutex> lock(m_ui_mutex);
+                        ui = m_ui_buffer;
+                        m_ui_dirty = false;
+                    }
+                    linenoiseHide(&ls);
+                    std::cout << "\r\n" << ui << std::flush;
+                    linenoiseShow(&ls);
                 }
             }
         }

@@ -20,6 +20,8 @@ namespace pkm {
         void start() override;
         void stop() override;
 
+        void set_input_ui(const std::string& ui);
+
         inline void set_callback(const EventCallbackFn& callback) override {
             m_callback = callback;
         };
@@ -32,9 +34,9 @@ namespace pkm {
         EventCallbackFn m_callback;
 
         std::thread m_thread;
-        std::mutex m_mutex;
-        std::condition_variable m_cv;
+        std::mutex m_ui_mutex;
+        std::string m_ui_buffer{"> "};
+        std::atomic<bool> m_ui_dirty{true};
         std::atomic<bool> m_running{false};
-        std::string m_prompt;
     };
 }

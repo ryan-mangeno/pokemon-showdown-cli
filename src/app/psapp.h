@@ -3,7 +3,7 @@
 #include "protocol/psclient.h"
 #include "protocol/message.h"
 #include "protocol/battlestate.h"
-#include "input/input.h"
+#include "input/cl_input.h"
 #include "core/layerstack.h"
 #include "core/event/event.h"
 #include "core/event/command_event.h"
@@ -16,7 +16,7 @@
 namespace pkm {
 
     // -------------------------------------------------------
-    // MenuLayer — bottom of stack, always present
+    // MenuLayer: bottom of stack, always present
     // handles lobby state: searching, waiting, main menu input
     // -------------------------------------------------------
     class MenuLayer : public Layer {
@@ -58,7 +58,7 @@ namespace pkm {
 
 
     // -------------------------------------------------------
-    // BattleLayer — pushed on top when battle starts
+    // BattleLayer - pushed on top when battle starts
     // owns BattleState and battle room ID
     // popped by PsApp when win/tie received
     // -------------------------------------------------------
@@ -84,55 +84,50 @@ namespace pkm {
             dispatcher.Dispatch<CommandEvent>([this](CommandEvent& e) {
                 const std::string& cmd = e.get_command();
                 PK_INFO("[BattleLayer] Command received: '{}'", cmd);
+                
+                // TODO: if user enters a command that is invalid we should pass to ui to be rendered
 
-                if (cmd == "5") {
-                    PK_INFO("--- ENEMY TEAM ---");
-                    for (const auto& p : m_state.opponent_team())
-                        PK_INFO("  {} | {}/{} HP{}", p.name, p.hp_current, p.hp_max, p.active ? " [ACTIVE]" : "");
-                } else if (cmd == "6") {
-                    PK_INFO("--- YOUR TEAM ---");
-                    for (const auto& p : m_state.your_team())
-                        PK_INFO("  {} | {}/{} HP{}", p.name, p.hp_current, p.hp_max, p.active ? " [ACTIVE]" : "");
-                } else {
+                // temporary but should be a battle way to handle this
+                if (cmd == "1" || cmd == "2" || cmd == "3" || cmd == "4") {
                     m_client->send(m_battle_room + "|/choose move " + cmd);
+                } else if ( cmd == "f") {
+                    m_client->send(m_battle_room + "|/forfeit");
+                }  else if (cmd == "t") {
+                    if (m_timer_active) {
+                        m_client->send(m_battle_room + "|/timer off");
+                        m_timer_active = false;
+                    } else {
+                        m_client->send(m_battle_room + "|/timer on");
+                        m_timer_active = true;
+                    }
                 }
+                // do not propogate command events further for now
                 return true;
             });
 
             dispatcher.Dispatch<MessageEvent>([this](MessageEvent& e) {
                 const auto& msg = e.get_msg();
                 m_state.apply(msg);
-
+                /* TODO: decide how i want to handle these
                 if (msg.type == "request")       on_request(msg);
                 else if (msg.type == "turn")     { if (!msg.args.empty()) PK_INFO("=== TURN {} ===", msg.args[0]); }
                 else if (msg.type == "faint")    { if (!msg.args.empty()) PK_INFO("{} fainted!", msg.args[0]); }
                 else if (msg.type == "move")     { if (msg.args.size() >= 2) PK_INFO("{} used {}", msg.args[0], msg.args[1]); }
-
+                */
                 return true;
             });
         }
 
+        const protocol::BattleState& get_battle_state() const { return m_state; }
         const std::string& get_battle_room() const { return m_battle_room; }
 
     private:
-        void on_request(const protocol::Message& msg) {
-            if (msg.args.empty() || msg.args[0].empty()) return;
-            std::stringstream ss;
-            ss << "\n=== YOUR TURN ===\n";
-            for (size_t i = 0; i < m_state.available_moves().size(); i++) {
-                auto& m = m_state.available_moves()[i];
-                ss << " [" << (i+1) << "] " << m.name << " (" << m.pp << "/" << m.max_pp << " PP)";
-                if (m.disabled) ss << " [DISABLED]";
-                ss << "\n";
-            }
-            ss << " [5] Enemy Team  [6] Your Team\n";
-            PK_INFO("{}", ss.str());
-        }
 
     private:
         Ref<protocol::PsClient>  m_client;
         protocol::BattleState    m_state;
         std::string              m_battle_room;
+        bool                     m_timer_active = false;
     };
 
 
@@ -147,6 +142,11 @@ namespace pkm {
         bool init();
         void run();
         void shutdown();
+        
+        // TODO: should be "rendering" ui in cli and 
+        // not use CLInput but Input for m_input
+        void on_update();
+        void on_render();
 
     private:
         void process_network();
@@ -154,9 +154,11 @@ namespace pkm {
         void push_to_layers(Event& e);
         void on_network_message(const protocol::Message& msg);
 
+        std::string build_battle_ui();
+
     private:
         Ref<protocol::PsClient>            m_client;
-        Scope<Input>                       m_input;
+        Scope<CLInput>                     m_input;
         LayerStack                         m_layerstack;
         BattleLayer*                       m_battle_layer{nullptr}; // non-owning ptr for push/pop
 
@@ -165,6 +167,7 @@ namespace pkm {
 
         bool         m_running;
         bool         m_in_battle;
+        std::string  m_ui;
     };
 
 }

@@ -30,6 +30,7 @@ namespace pkm {
             EventDispatcher dispatcher(e);
             dispatcher.Dispatch<CommandEvent>([this](CommandEvent& e) {
                 std::string cmd = e.get_command();
+                // TODO: change to a event queue
                 m_input_queue.push(cmd);
                 return true;
             });
@@ -44,6 +45,8 @@ namespace pkm {
         m_client->start();
 
         while (m_running) {
+            on_update();
+            on_render();
             process_network();
             process_input();
             std::this_thread::yield();
@@ -55,6 +58,71 @@ namespace pkm {
     void PsApp::shutdown() {
         m_running = false;
         m_input->stop();
+    }
+
+    std::string PsApp::build_battle_ui() {
+        if (!m_battle_layer) {
+            PK_WARN("Can't build battle ui without battle layer!");
+            return "";
+        }
+
+        std::stringstream ss;
+
+        ss << "\r=================================================\r\n";
+        ss << "\r  POKEMON SHOWDOWN CLI  | Room: " << m_battle_layer->get_battle_room() << "\r\n";
+        ss << "\r=================================================\r\n\r\n";
+
+        const protocol::BattleState& bs = m_battle_layer->get_battle_state();
+
+        ss << "\r--- OPPONENT TEAM ---\r\n";
+        for (const auto& p : bs.opponent_team()) {
+            ss << "\r" << (p.active ? " [ACTIVE] " : " [BENCH]  ") << p.name << "\r\n";
+        }
+        ss << "\r\n";
+
+        ss << "\r--- YOUR TEAM ---\r\n";
+        auto& team = bs.your_team();
+        for (size_t i = 0; i < team.size(); i++) {
+            const auto& p = team[i];
+            ss << "\r [s" << (i+1) << "] "
+            << (p.active ? "*ACTIVE* " : "         ")
+            << p.name << " (" << p.hp_current << "/" << p.hp_max << " HP)\r\n";
+        }
+        ss << "\r\n";
+
+        ss << "\r--- AVAILABLE ACTIONS ---\r\n";
+        auto& moves = bs.available_moves();
+        if (moves.empty()) {
+            ss << "\r  Waiting for server...\r\n";
+        } else {
+            for (size_t i = 0; i < moves.size(); i++) {
+                ss << "\r [" << (i+1) << "] " << moves[i].name
+                << " (" << moves[i].pp << "/" << moves[i].max_pp << " PP)";
+                if (moves[i].disabled) ss << " [DISABLED]";
+                ss << "\r\n";
+            }
+        }
+
+        ss << "\r [f] Forfeit\r\n";
+        ss << "\r [t] Toggle Timer\r\n";
+
+
+        ss << "\r=================================================\r\n";
+        return ss.str();
+    }
+
+    void PsApp::on_update() {
+        if (m_in_battle) {
+            std::string new_ui = build_battle_ui();
+            if (new_ui != m_ui) {  // only update if changed
+                m_ui = new_ui;
+                m_input->set_input_ui(m_ui);
+            }
+        }
+    }
+
+    void PsApp::on_render() {
+        // TODO: "render" the linenoise prompt set for cli input
     }
 
     void PsApp::process_network() {
