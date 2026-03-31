@@ -75,15 +75,19 @@ namespace pkm {
         const protocol::BattleState& bs = m_battle_layer->get_battle_state();
 
         ss << "\r--- OPPONENT TEAM ---\r\n";
-        for (const auto& p : bs.opponent_team()) {
-            ss << "\r" << (p.active ? " [ACTIVE] " : " [BENCH]  ") << p.name << "\r\n";
+        auto& team1 = bs.opponent_team();
+        for (size_t i = 0; i < team1.size(); i++) {
+            const auto& p = team1[i];
+            ss << "\r [s" << (i+1) << "] "
+            << (p.active ? "*ACTIVE* " : "         ")
+            << p.name << " (" << p.hp_current << "/" << p.hp_max << " HP)\r\n";
         }
         ss << "\r\n";
 
         ss << "\r--- YOUR TEAM ---\r\n";
-        auto& team = bs.your_team();
-        for (size_t i = 0; i < team.size(); i++) {
-            const auto& p = team[i];
+        auto& team2 = bs.your_team();
+        for (size_t i = 0; i < team2.size(); i++) {
+            const auto& p = team2[i];
             ss << "\r [s" << (i+1) << "] "
             << (p.active ? "*ACTIVE* " : "         ")
             << p.name << " (" << p.hp_current << "/" << p.hp_max << " HP)\r\n";
