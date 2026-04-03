@@ -93,6 +93,8 @@ namespace pkm::protocol {
         // update available moves every request
         m_available_moves.clear();
         m_force_switch = j.contains("forceSwitch");
+        j.contains("canTeresteralize") ? m_tera_option = j["canTeresteralize"].get<std::string>() : m_tera_option = "";
+
         if (j.contains("active")) {
             for (auto& m : j["active"][0]["moves"]) {
                 MoveOption opt;

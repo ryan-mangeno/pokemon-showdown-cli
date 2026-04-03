@@ -9,6 +9,7 @@
 #include "core/event/command_event.h"
 #include "core/event/message_event.h"
 #include "core/event/key_event.h"
+#include "util/util.h"
 
 #include <string>
 #include <sstream>
@@ -83,20 +84,27 @@ namespace pkm {
 
             dispatcher.Dispatch<CommandEvent>([this](CommandEvent& e) {
                 const std::string& cmd = e.get_command();
+                const std::vector<std::string> tokens = tokenize(cmd);
                 PK_INFO("[BattleLayer] Command received: '{}'", cmd);
+
+                if (tokens.size() == 0) {
+                    PK_WARN("Empty Command Recieved!");
+                    return true;
+                }
                 
                 // TODO: if user enters a command that is invalid we should pass to ui to be rendered
 
                 // TODO: add terra type
 
                 // temporary but should be a battle way to handle this
-                if (cmd == "1" || cmd == "2" || cmd == "3" || cmd == "4") {
+                if (tokens[0] == "1" || tokens[0] == "2" || tokens[0] == "3" || tokens[0] == "4") {
                     if (m_state.is_force_switch()) {
-                        m_client->send(m_battle_room + "|/choose switch " + cmd);
+                        m_client->send(m_battle_room + "|/choose switch " + cmd[0]);
                     } else {
-                        m_client->send(m_battle_room + "|/choose move " + cmd);
+                        std::string tokenize_str = (tokens.size() == 2 && tokens[1] == "tera") ? " terastallize" : "";
+                        m_client->send(m_battle_room + "|/choose move " + cmd[0] + tokenize_str);
                     }
-                } else if ( cmd == "f") {
+                } else if ( cmd == "f") { 
                     m_client->send(m_battle_room + "|/forfeit");
                 }  else if (cmd == "t") {
                     if (m_timer_active) {

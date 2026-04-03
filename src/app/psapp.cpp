@@ -110,6 +110,7 @@ namespace pkm {
         ss << "\r\n [f] Forfeit\r\n";
         ss << "\r [t] Toggle Timer\r\n";
         ss << "\r [s<1-6>] Switch\r\n";
+        ss << "\r [move] <optional:tera>\r\n";
 
         ss << "\r=================================================\r\n";
         return ss.str();

@@ -57,6 +57,7 @@ namespace pkm::protocol {
             std::string m_your_name;
             std::string m_your_side;
             std::string m_opponent_name;
+            std::string m_tera_option;
             std::vector<Pokemon> m_your_team;
             std::vector<Pokemon> m_opponent_team;
             std::vector<MoveOption> m_available_moves;
