@@ -90,7 +90,9 @@ namespace pkm {
             const auto& p = team2[i];
             ss << "\r [s" << (i+1) << "] "
             << (p.active ? "*ACTIVE* " : "         ")
-            << p.name << " (" << p.hp_current << "/" << p.hp_max << " HP)\r\n";
+            << p.name << " (" << p.hp_current << "/" << p.hp_max << " HP)"
+            << (p.active ? (" : Tera - " + bs.active_pokemon().tera_type)  : "")
+            << "\r\n";
         }
         ss << "\r\n";
 
@@ -110,7 +112,7 @@ namespace pkm {
         ss << "\r\n [f] Forfeit\r\n";
         ss << "\r [t] Toggle Timer\r\n";
         ss << "\r [s<1-6>] Switch\r\n";
-        ss << "\r [move] <optional:tera>\r\n";
+        ss << "\r [move] <optional:tera> \r\n";
 
         ss << "\r=================================================\r\n";
         return ss.str();

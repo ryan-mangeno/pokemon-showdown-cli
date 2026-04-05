@@ -69,10 +69,11 @@ namespace pkm::protocol {
             PK_INFO("Your Team:");
             for (auto& p : j["side"]["pokemon"]) {
                 Pokemon pkm;
-                pkm.ident   = p["ident"].get<std::string>();
-                pkm.name    = parse_ident(pkm.ident).name;
-                pkm.active  = p["active"].get<bool>(); 
-                pkm.fainted = false;
+                pkm.ident     = p["ident"].get<std::string>();
+                pkm.name      = parse_ident(pkm.ident).name;
+                pkm.active    = p["active"].get<bool>(); 
+                pkm.fainted   = false;
+                pkm.tera_type = p["teraType"].get<std::string>();
 
                 std::string condition = p["condition"].get<std::string>();
                 size_t slash = condition.find('/');
@@ -93,7 +94,6 @@ namespace pkm::protocol {
         // update available moves every request
         m_available_moves.clear();
         m_force_switch = j.contains("forceSwitch");
-        j.contains("canTeresteralize") ? m_tera_option = j["canTeresteralize"].get<std::string>() : m_tera_option = "";
 
         if (j.contains("active")) {
             for (auto& m : j["active"][0]["moves"]) {
