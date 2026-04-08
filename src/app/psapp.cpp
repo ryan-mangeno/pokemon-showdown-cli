@@ -24,7 +24,7 @@ namespace pkm {
         // TODO: need to call on attach for all layers
         m_layerstack.push_layer(new MenuLayer(m_client));
 
-        // input thread: only pushes raw strings to queue, never touches layers
+        // input thread: only pushes raw strings to queue
         m_input = MakeScope<CLInput>();
         m_input->set_callback([this](Event& e) {
             EventDispatcher dispatcher(e);
@@ -51,13 +51,12 @@ namespace pkm {
             process_input();
             std::this_thread::yield();
         }
-
-        m_client->stop();
     }
 
     void PsApp::shutdown() {
-        m_running = false;
         m_input->stop();
+        m_client->stop();
+        m_running = false;
     }
 
     std::string PsApp::build_battle_ui() {
@@ -153,7 +152,10 @@ namespace pkm {
     }
 
     void PsApp::on_render() {
-        // TODO: "render" the linenoise prompt set for cli input
+        // in headless version, CLInput "owns" rendering
+        // since its pretty closely tied with linenoise
+        // with proper thread safety the app can control it 
+        // but it becomes much more complex since input is happening in a seperate thread
     }
 
     void PsApp::process_network() {

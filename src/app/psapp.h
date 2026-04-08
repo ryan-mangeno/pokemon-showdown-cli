@@ -92,11 +92,6 @@ namespace pkm {
                     return true;
                 }
                 
-                // TODO: if user enters a command that is invalid we should pass to ui to be rendered
-
-                // TODO: add terra type
-
-                // temporary but should be a battle way to handle this
                 if (tokens[0] == "1" || tokens[0] == "2" || tokens[0] == "3" || tokens[0] == "4") {
                     if (m_state.is_force_switch()) {
                         m_client->send(m_battle_room + "|/choose switch " + cmd[0]);
@@ -116,7 +111,6 @@ namespace pkm {
                     }
                 } else if (cmd == "s1" || cmd == "s2" || cmd == "s3" || 
                            cmd == "s4" || cmd == "s5" || cmd == "s6") {
-                    // explicit switch command
                     std::string slot = cmd.substr(1); // strip the 's'
                     m_client->send(m_battle_room + "|/choose switch " + slot);
                 }
@@ -127,12 +121,6 @@ namespace pkm {
             dispatcher.Dispatch<MessageEvent>([this](MessageEvent& e) {
                 const auto& msg = e.get_msg();
                 m_state.apply(msg);
-                /* TODO: decide how i want to handle these
-                if (msg.type == "request")       on_request(msg);
-                else if (msg.type == "turn")     { if (!msg.args.empty()) PK_INFO("=== TURN {} ===", msg.args[0]); }
-                else if (msg.type == "faint")    { if (!msg.args.empty()) PK_INFO("{} fainted!", msg.args[0]); }
-                else if (msg.type == "move")     { if (msg.args.size() >= 2) PK_INFO("{} used {}", msg.args[0], msg.args[1]); }
-                */
                 return true;
             });
         }
@@ -162,8 +150,6 @@ namespace pkm {
         void run();
         void shutdown();
         
-        // TODO: should be "rendering" ui in cli and 
-        // not use CLInput but Input for m_input
         void on_update();
         void on_render();
 
@@ -178,7 +164,10 @@ namespace pkm {
 
     private:
         Ref<protocol::PsClient>            m_client;
+
+        // TODO: maybe ifdef based on headless/not 
         Scope<CLInput>                     m_input;
+
         LayerStack                         m_layerstack;
         BattleLayer*                       m_battle_layer{nullptr}; // non-owning ptr for push/pop
 

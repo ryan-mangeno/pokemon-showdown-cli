@@ -74,14 +74,9 @@ namespace pkm {
             } else {
                 // timeout, redraw ui if dirty
                 if (m_ui_dirty.load()) {
-                    std::string ui;
-                    {
-                        std::lock_guard<std::mutex> lock(m_ui_mutex);
-                        ui = m_ui_buffer;
-                        m_ui_dirty = false;
-                    }
+                    m_ui_dirty = false;
                     linenoiseHide(&ls);
-                    std::cout << "\r\n" << ui << std::flush;
+                    std::cout << "\r\n" << m_ui_buffer << std::flush;
                     linenoiseShow(&ls);
                 }
             }
