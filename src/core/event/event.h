@@ -48,6 +48,8 @@ namespace pkm {
 		friend class EventDispatcher;
 
 	public:
+		virtual ~Event() = default;	
+
 		virtual EventType get_event_type() const = 0;
 		virtual const char* get_name() const = 0;
 		virtual int get_category_flags() const = 0;

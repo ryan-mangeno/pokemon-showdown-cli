@@ -29,12 +29,12 @@ namespace pkm {
             PK_INFO("[MenuLayer] Attached");
         }
 
-        virtual void on_event(Event& event) override {
-            EventDispatcher dispatcher(event);
+        virtual void on_event(Event& e) override {
+            EventDispatcher dispatcher(e);
 
-            dispatcher.Dispatch<CommandEvent>([this](CommandEvent& e) {
-                PK_INFO("[MenuLayer] Command received: '{}'", e.get_command());
-                const std::string& cmd = e.get_command();
+            dispatcher.Dispatch<CommandEvent>([this](CommandEvent& event) {
+                PK_INFO("[MenuLayer] Command received: '{}'", event.get_command());
+                const std::string& cmd = event.get_command();
                 if (cmd == "1") {
                     PK_INFO("[Menu] Searching for battle...");
                     m_client->send("|/search gen9randombattle");
@@ -44,8 +44,8 @@ namespace pkm {
                 return true;
             });
 
-            dispatcher.Dispatch<MessageEvent>([this](MessageEvent& e) {
-                const auto& msg = e.get_msg();
+            dispatcher.Dispatch<MessageEvent>([this](MessageEvent& event) {
+                const auto& msg = event.get_msg();
                 if (msg.type == "updateuser") {
                     PK_INFO("[Menu] Logged in as: {}", msg.args[0]);
                 }
@@ -79,11 +79,11 @@ namespace pkm {
             PK_INFO("[BattleLayer] Detached");
         }
 
-        virtual void on_event(Event& event) override {
-            EventDispatcher dispatcher(event);
+        virtual void on_event(Event& e) override {
+            EventDispatcher dispatcher(e);
 
-            dispatcher.Dispatch<CommandEvent>([this](CommandEvent& e) {
-                const std::string& cmd = e.get_command();
+            dispatcher.Dispatch<CommandEvent>([this](CommandEvent& event) {
+                const std::string& cmd = event.get_command();
                 const std::vector<std::string> tokens = tokenize(cmd);
                 PK_INFO("[BattleLayer] Command received: '{}'", cmd);
 
@@ -118,8 +118,8 @@ namespace pkm {
                 return true;
             });
 
-            dispatcher.Dispatch<MessageEvent>([this](MessageEvent& e) {
-                const auto& msg = e.get_msg();
+            dispatcher.Dispatch<MessageEvent>([this](MessageEvent& event) {
+                const auto& msg = event.get_msg();
                 m_state.apply(msg);
                 return true;
             });
@@ -155,7 +155,7 @@ namespace pkm {
 
     private:
         void process_network();
-        void process_input();
+        void poll();
         void push_to_layers(Event& e);
         void on_network_message(const protocol::Message& msg);
 
@@ -172,7 +172,7 @@ namespace pkm {
         BattleLayer*                       m_battle_layer{nullptr}; // non-owning ptr for push/pop
 
         pkm::SPSCQueue<protocol::Message>  m_network_queue{256};
-        pkm::SPSCQueue<std::string>        m_input_queue{64};
+        pkm::SPSCQueue<Scope<Event>>       m_event_queue{64};
 
         bool         m_running;
         bool         m_in_battle;

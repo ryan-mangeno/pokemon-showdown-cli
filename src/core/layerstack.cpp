@@ -18,15 +18,18 @@ namespace pkm {
 	
 	void LayerStack::push_layer(Layer* layer) {
 		m_layers.emplace(begin() + (m_layer_iterator_offset++), layer);
+		layer->on_attach();
 	}
 
 	void LayerStack::push_overlay(Layer* overlay) {
 		m_layers.emplace_back(overlay);
+		overlay->on_attach();
 	}
 
 	void LayerStack::pop_layer(Layer* layer) {
 		auto it = std::find(m_layers.begin(), m_layers.end(), layer);
 		if (it != m_layers.end()) {
+			layer->on_detach();
 			m_layers.erase(it);
 
 			// we wont need to check for bounds, in the case when we remove first element
@@ -39,8 +42,10 @@ namespace pkm {
 
 	void LayerStack::pop_overlay(Layer* overlay) {
 		auto it = std::find(m_layers.begin(), m_layers.end(), overlay);
-		if (it != m_layers.end())
+		if (it != m_layers.end()) {
+			overlay->on_detach();
 			m_layers.erase(it);
+		}
 	}
 
 }

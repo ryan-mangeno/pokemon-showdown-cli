@@ -54,13 +54,13 @@ namespace pkm::protocol {
     }
 
     void PsClient::stop() {
-        m_running = false;
         // ioc stop wakes up run() so the thread can exit
         m_ws->get_ioc().stop();
         if (m_network_thread.joinable()) {
             m_network_thread.join();
         }
         m_ws->close();
+        m_running = false;
     }
 
     bool PsClient::poll(Message& out) {

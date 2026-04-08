@@ -20,8 +20,7 @@ namespace pkm {
             return false;
         }
 
-        // MenuLayer is always at the bottom
-        // TODO: need to call on attach for all layers
+        // menu is always at the bottom of layer stack
         m_layerstack.push_layer(new MenuLayer(m_client));
 
         // input thread: only pushes raw strings to queue
@@ -29,9 +28,8 @@ namespace pkm {
         m_input->set_callback([this](Event& e) {
             EventDispatcher dispatcher(e);
             dispatcher.Dispatch<CommandEvent>([this](CommandEvent& e) {
-                std::string cmd = e.get_command();
-                // TODO: change to a event queue
-                m_input_queue.push(cmd);
+                Scope<Event> event = MakeScope<CommandEvent>(e);
+                m_event_queue.push(event);
                 return true;
             });
         });
@@ -48,7 +46,7 @@ namespace pkm {
             on_update();
             on_render();
             process_network();
-            process_input();
+            poll();
             std::this_thread::yield();
         }
     }
@@ -74,7 +72,7 @@ namespace pkm {
         const protocol::BattleState& bs = m_battle_layer->get_battle_state();
 
         ss << "\r--- OPPONENT TEAM ---\r\n";
-        auto& team1 = bs.opponent_team();
+        const auto& team1 = bs.opponent_team();
         for (size_t i = 0; i < team1.size(); i++) {
             const auto& p = team1[i];
             ss << "\r [s" << (i+1) << "] "
@@ -84,7 +82,7 @@ namespace pkm {
         ss << "\r\n";
 
         ss << "\r--- YOUR TEAM ---\r\n";
-        auto& team2 = bs.your_team();
+        const auto& team2 = bs.your_team();
         for (size_t i = 0; i < team2.size(); i++) {
             const auto& p = team2[i];
             ss << "\r [s" << (i+1) << "] "
@@ -96,7 +94,7 @@ namespace pkm {
         ss << "\r\n";
 
         ss << "\r--- AVAILABLE ACTIONS ---\r\n";
-        auto& moves = bs.available_moves();
+        const auto& moves = bs.available_moves();
         if (moves.empty()) {
             ss << "\r  Waiting for server...\r\n";
         } else {
@@ -167,19 +165,22 @@ namespace pkm {
         }
     }
 
-    void PsApp::process_input() {
-        std::string cmd;
-        while (m_input_queue.pop(cmd)) {
-            PK_INFO("[App] Got command: '{}'", cmd);
+    void PsApp::poll() {
+        Scope<Event> e = nullptr;
+        while (m_event_queue.pop(e)) {
+            PK_INFO("[App] Got event: '{}'", e->get_name());
 
-            if (cmd == "q" || cmd == "quit") {
-                PK_INFO("Quitting...");
-                m_running = false;
-                return;
+            if (e->get_event_type() == EventType::Command) {
+                CommandEvent* cmd_event = dynamic_cast<CommandEvent*>(e.get());
+                const std::string& cmd = cmd_event->get_command();
+                if (cmd == "q" || cmd == "quit") {
+                    PK_INFO("Quitting...");
+                    m_running = false;
+                    break;
+                }
             }
 
-            CommandEvent e{cmd};
-            push_to_layers(e);
+            push_to_layers(*e);
         }
     }
 
