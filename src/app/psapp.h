@@ -172,6 +172,7 @@ namespace pkm {
         BattleLayer*                       m_battle_layer{nullptr}; // non-owning ptr for push/pop
 
         pkm::SPSCQueue<protocol::Message>  m_network_queue{256};
+        // TODO: introduced multi threaded event queue, priority, etc
         pkm::SPSCQueue<Scope<Event>>       m_event_queue{64};
 
         bool         m_running;
