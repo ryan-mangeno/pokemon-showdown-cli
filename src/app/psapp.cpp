@@ -153,7 +153,6 @@ namespace pkm {
         // in headless version, CLInput "owns" rendering
         // since its pretty closely tied with linenoise
         // with proper thread safety the app can control it 
-        // but it becomes much more complex since input is happening in a seperate thread
     }
 
     void PsApp::process_network() {
