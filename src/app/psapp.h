@@ -13,6 +13,7 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 
 namespace pkm {
 
@@ -48,6 +49,8 @@ namespace pkm {
                 const auto& msg = event.get_msg();
                 if (msg.type == "updateuser") {
                     PK_INFO("[Menu] Logged in as: {}", msg.args[0]);
+                } else if (msg.type == "win") {
+                    std::cout << "\nWinner: " << msg.args[0] << '\n';
                 }
                 return false; // dont consume, PsApp needs updatesearch too
             });

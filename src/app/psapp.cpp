@@ -23,7 +23,6 @@ namespace pkm {
         // menu is always at the bottom of layer stack
         m_layerstack.push_layer(new MenuLayer(m_client));
 
-        // input thread: only pushes raw strings to queue
         m_input = MakeScope<CLInput>();
         m_input->set_callback([this](Event& e) {
             EventDispatcher dispatcher(e);
@@ -150,9 +149,6 @@ namespace pkm {
     }
 
     void PsApp::on_render() {
-        // in headless version, CLInput "owns" rendering
-        // since its pretty closely tied with linenoise
-        // with proper thread safety the app can control it 
     }
 
     void PsApp::process_network() {
@@ -178,9 +174,9 @@ namespace pkm {
                     break;
                 }
             }
-
             push_to_layers(*e);
         }
+        m_input->poll();
     }
 
     void PsApp::push_to_layers(Event& e) {
@@ -206,7 +202,7 @@ namespace pkm {
                 m_battle_layer = new BattleLayer(m_client, room);
                 m_layerstack.push_layer(m_battle_layer);
             }
-            // TODO: add message on end game
+            // TODO: add message for user on end game
         } else if (msg.type == "win" || msg.type == "tie") {
             if (m_battle_layer) {
                 m_layerstack.pop_layer(m_battle_layer);

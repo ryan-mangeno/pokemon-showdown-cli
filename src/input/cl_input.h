@@ -9,8 +9,11 @@
 #include <atomic>
 #include <functional>
 
+#include <linenoise.h>
 
 namespace pkm {
+    
+static constexpr int BUFFER_SIZE = 1024;
 
     class CLInput : public Input {
 
@@ -19,7 +22,7 @@ namespace pkm {
         
         void start() override;
         void stop() override;
-
+        void poll() override;
         void set_input_ui(const std::string& ui);
 
         inline void set_callback(const EventCallbackFn& callback) override {
@@ -33,10 +36,11 @@ namespace pkm {
 
         EventCallbackFn m_callback;
 
-        std::thread m_thread;
-        std::mutex m_ui_mutex;
         std::string m_ui_buffer{"> "};
-        std::atomic<bool> m_ui_dirty{true};
-        std::atomic<bool> m_running{false};
+        char m_lsbuffer[BUFFER_SIZE];
+        struct linenoiseState m_ls;
+        bool m_ui_dirty{true};
+        bool m_running{false};
+        
     };
 }

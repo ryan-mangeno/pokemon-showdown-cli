@@ -9,6 +9,7 @@ namespace pkm {
 
         virtual ~Input() = default;
         virtual void start() = 0;
+        virtual void poll() = 0;
         virtual void stop() = 0;
         virtual void set_callback(const EventCallbackFn& callback) = 0;
         
