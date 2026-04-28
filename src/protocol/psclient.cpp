@@ -6,7 +6,6 @@
 #include "net/netconfig.h"
 #include "net/wsclient.h"
 #include "protocol/parser.h"
-#include "util/env_loader.h"
 #include "net/auth.h"
 
 #include <nlohmann/json.hpp>
@@ -27,8 +26,6 @@ namespace pkm::protocol {
             PK_WARN("Already initialized");
             return true;
         }
-
-        pkm::load_env("config/.env");
 
         pkm::net::NetConfig ncfg;
         pkm::JsonLoader::load(ncfg, NET_CONFIG_PATH.c_str());
@@ -92,16 +89,15 @@ namespace pkm::protocol {
         m_ws->get_ioc().run(); // blocks here until ioc is stopped
         PK_INFO("Network thread exiting");
     }
+    
 
     void PsClient::on_chall_str(const Message& msg) {
         if (m_logged_in) return;
 
         std::string full_challstr = msg.args[0] + "|" + msg.args[1];
-        const char* user = std::getenv("PS_USERNAME");
-        const char* pass = std::getenv("PS_PASSWORD");
 
-        if (!user || !pass) {
-            PK_ERROR("Login credentials missing from .env!");
+        if (m_username[0] == '\0' || m_password[0] == '\0') {
+            PK_ERROR("User not logged in before chall str!");
             return;
         }
 

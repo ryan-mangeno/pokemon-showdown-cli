@@ -1,8 +1,6 @@
-# pokemon-showdown-app
+# pokemon-showdown-cli
 
-Multiplayer pokemon battle client with a native macOS UI and low-level C++ networking, I will likely end up integrating this with my Acorn UI framework with C++ and Vulkan.
-
-Note - this is just getting started, and I am currently going to shoot for a simple MVP, being able to enter a random 6v6 battle, then I will add more features.
+Multiplayer pokemon battle client with low-level C++ networking
 
 Connects to [Pokémon Showdown](https://pokemonshowdown.com) — the server is open source so I can determine API endpoints and protocol compatibility. This repo may break if upstream changes their protocol, and I am the only maintainer.
 

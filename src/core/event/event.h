@@ -15,7 +15,7 @@ namespace pkm {
 		WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
 		AppTick, AppUpdate, AppRender,
 		KeyPressed, KeyReleased, KeyTyped,
-		Command, Message,
+		Command, Message, Layer,
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
 	};
 
@@ -28,9 +28,9 @@ namespace pkm {
 		EventCategoryKeyboard        = BIT(2),
 		EventCategoryMouse           = BIT(3),
 		EventCategoryMouseButton     = BIT(4),
-        EventCategoryNetwork  		 = BIT(5),
-        EventCategoryBattle  		 = BIT(6),
-        EventCategoryCLI      		 = BIT(7),
+    EventCategoryNetwork  		   = BIT(5),
+    EventCategoryBattle  		     = BIT(6),
+    EventCategoryCLI     		     = BIT(7),
 	};
 
 // TODO: should be mindful about platform stuff in future 

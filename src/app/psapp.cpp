@@ -48,12 +48,53 @@ namespace pkm {
             poll();
             std::this_thread::yield();
         }
+
+        shutdown();
     }
 
     void PsApp::shutdown() {
         m_input->stop();
         m_client->stop();
         m_running = false;
+    }
+    
+    // should be owned by layers tbh
+    std::string PsApp::build_login_ui() {
+        std::stringstream ss;
+
+        ss << "\r=================================================\r\n";
+        ss << "\r  POKEMON SHOWDOWN CLI  |  LOGIN                \r\n";
+        ss << "\r=================================================\r\n\r\n";
+
+        ss << "\r  Please log in to your account.\r\n\r\n";
+
+        ss << "\r  Type your username and press Enter.\r\n\r\n";
+
+        ss << "\r--- AVAILABLE ACTIONS ---\r\n";
+        ss << "\r [b] Back to Main Menu\r\n";
+        ss << "\r [q] Quit\r\n";
+
+        ss << "\r=================================================\r\n";
+        return ss.str();
+    }
+
+    std::string PsApp::build_signup_ui() {
+        std::stringstream ss;
+
+        ss << "\r=================================================\r\n";
+        ss << "\r  POKEMON SHOWDOWN CLI  |  SIGN-UP              \r\n";
+        ss << "\r=================================================\r\n\r\n";
+
+        ss << "\r  Create a new Pokemon Showdown account.\r\n\r\n";
+
+        ss << "\r  Type your desired username and press Enter.\r\n\r\n";
+
+        ss << "\r--- AVAILABLE ACTIONS ---\r\n";
+        ss << "\r [b] Back to Main Menu\r\n";
+        ss << "\r [q] Quit\r\n";
+
+        ss << "\r=================================================\r\n";
+        return ss.str();
     }
 
     std::string PsApp::build_battle_ui() {
@@ -125,6 +166,8 @@ namespace pkm {
 
         ss << "\r--- AVAILABLE ACTIONS ---\r\n";
         ss << "\r [1] Search for Random Battle\r\n";
+        ss << "\r [2] Login\r\n";
+        ss << "\r [3] Sign-up\r\n";
         ss << "\r [q] Quit\r\n";
 
         ss << "\r=================================================\r\n";
@@ -168,12 +211,17 @@ namespace pkm {
             if (e->get_event_type() == EventType::Command) {
                 CommandEvent* cmd_event = dynamic_cast<CommandEvent*>(e.get());
                 const std::string& cmd = cmd_event->get_command();
-                if (cmd == "q" || cmd == "quit") {
+                if (cmd == "q") {
                     PK_INFO("Quitting...");
                     m_running = false;
                     break;
-                }
+                } 
+            } else if (e->get_event_type() == EventType::Layer) {
+                LayerEvent* layer_event = dyanmic_cast<LayerEvent*>(e.get());     
+                m_layerstack.push_layer(layer_event.get_layer_ptr());
+                break;
             }
+
             push_to_layers(*e);
         }
         m_input->poll();
@@ -195,19 +243,11 @@ namespace pkm {
             auto j = nlohmann::json::parse(msg.args[0]);
             if (!j["games"].is_null() && !m_in_battle) {
                 std::string room = j["games"].begin().key();
-                m_in_battle = true;
                 m_client->send("|/join " + room);
-
-                // push battle layer on top
-                m_battle_layer = new BattleLayer(m_client, room);
-                m_layerstack.push_layer(m_battle_layer);
             }
-            // TODO: add message for user on end game
         } else if (msg.type == "win" || msg.type == "tie") {
             if (m_battle_layer) {
                 m_layerstack.pop_layer(m_battle_layer);
-                m_battle_layer = nullptr;
-                m_in_battle = false;
                 PK_INFO("[App] Battle ended, returning to menu");
             }
         }

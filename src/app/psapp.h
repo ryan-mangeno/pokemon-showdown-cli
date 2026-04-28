@@ -17,10 +17,8 @@
 
 namespace pkm {
 
-    // -------------------------------------------------------
     // MenuLayer: bottom of stack, always present
     // handles lobby state: searching, waiting, main menu input
-    // -------------------------------------------------------
     class MenuLayer : public Layer {
     public:
         MenuLayer(Ref<protocol::PsClient> client)
@@ -39,7 +37,9 @@ namespace pkm {
                 if (cmd == "1") {
                     PK_INFO("[Menu] Searching for battle...");
                     m_client->send("|/search gen9randombattle");
-                } else if (cmd == "q" || cmd == "Q") {
+                } else if (cmd == "2") {
+                    PK_INFO("[Menu] Adding login overlay"); 
+                } else if (cmd == "q") {
                     PK_INFO("[Menu] Quitting...");
                 }
                 return true;
@@ -61,11 +61,55 @@ namespace pkm {
     };
 
 
-    // -------------------------------------------------------
+    class LoginOverlay : public Layer {
+        public:
+            LoginOverlay(Ref<protocol::PsClient> client) : m_client(client) {}
+
+            virtual void on_attach() override {
+                PK_INFO("[LoginOverlay] Attached");
+            }
+
+            virtual void on_detach() override {
+                PK_INFO("[LoginOverlay] Detached");
+            }
+
+            virtual void on_event(Event& e) override {
+                EventDispatcher dispatcher(e);
+
+                dispatcher.Dispatch<CommandEvent>([this](CommandEvent& event) {
+                    const std::string& cmd = event.get_command();
+                    const std::vector<std::string> tokens = tokenize(cmd);
+                    PK_INFO("[LoginOverlay] Command Recieved: '{}'", cmd);
+
+                    if (tokens.size() != 1) { std::cout << "Invalid Input, enter again!\n"; return;}
+                    
+                    if (!m_entered_username) {
+                        bool success = m_client->set_username(tokens[0]));
+                        if (!success) { std::cout << "Invalid username, retry!\n"; return; }
+                        std::cout << "Username set: " << tokens[0] << '\n'; 
+                        m_entered_username = true;
+                    } else {
+                        bool success = m_client->set_password(tokens[0]));
+                        if (!success) { std::cout << "Invalid password, retry!\n"; return;}
+                        std::cout << "Password set ...\n";
+                        m_entered_password = true;
+                    }
+                    
+                    return true; // dont propogate command to next layers
+                });
+            }
+
+        private:
+            Ref<protocol::PsClient> m_client;
+            bool m_entered_username{false};
+            bool m_entered_password{false};
+            
+            
+    }
+
     // BattleLayer - pushed on top when battle starts
     // owns BattleState and battle room ID
     // popped by PsApp when win/tie received
-    // -------------------------------------------------------
     class BattleLayer : public Layer {
     public:
         BattleLayer(Ref<protocol::PsClient> client, const std::string& battle_room)
@@ -141,9 +185,10 @@ namespace pkm {
     };
 
 
-    // -------------------------------------------------------
+
+
+
     // PsApp, owns everything, drives the main loop
-    // -------------------------------------------------------
     class PsApp {
     public:
         PsApp();
@@ -151,35 +196,34 @@ namespace pkm {
 
         bool init();
         void run();
-        void shutdown();
         
         void on_update();
         void on_render();
 
     private:
+        void shutdown();
+
         void process_network();
         void poll();
         void push_to_layers(Event& e);
         void on_network_message(const protocol::Message& msg);
 
+        std::string build_signup_ui()
+        std::string build_login_ui();
         std::string build_battle_ui();
         std::string build_main_menu_ui();
 
     private:
         Ref<protocol::PsClient>            m_client;
-
-        // TODO: maybe ifdef based on headless/not 
         Scope<CLInput>                     m_input;
 
         LayerStack                         m_layerstack;
-        BattleLayer*                       m_battle_layer{nullptr}; // non-owning ptr for push/pop
 
         pkm::SPSCQueue<protocol::Message>  m_network_queue{256};
         // TODO: introduced multi threaded event queue, priority, etc
         pkm::SPSCQueue<Scope<Event>>       m_event_queue{64};
 
         bool         m_running;
-        bool         m_in_battle;
         std::string  m_ui;
     };
 
