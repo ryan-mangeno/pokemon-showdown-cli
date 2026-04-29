@@ -55,7 +55,7 @@ namespace pkm::net {
                             assertion = "";
                         }
                     } else if (j.contains("curuser") && j["curuser"]["loggedin"] == false) {
-                        PK_ERROR("Login failed: Unauthorized. Check your credentials in .env");
+                        PK_ERROR("Login failed: Unauthorized");
                     }
                 } catch (const std::exception& e) {
                     PK_ERROR("JSON Parse Error during Auth: {}", e.what());
