@@ -9,7 +9,7 @@
 #include <atomic>
 #include <functional>
 #include <cstring>
-#include <algoritm>
+#include <algorithm>
 
 namespace pkm::protocol {
 
@@ -34,18 +34,18 @@ namespace pkm::protocol {
                 }
 
                 size_t len = std::min(username.length(), sizeof(m_username) - 1);
-                std::memcpy(m_username, username.c_str, len);
+                std::memcpy(m_username, username.c_str(), len);
                 m_username[len] = '\0';
                 
                 return true;
             }
 
             inline bool set_password(const std::string& password) {
-                if (username.empty()) {
+                if (password.empty()) {
                     return false;
                 }
 
-                if (username.find_first_not_of(" \t\r\n") == std::string::npos) {
+                if (password.find_first_not_of(" \t\r\n") == std::string::npos) {
                     return false;
                 }
 
