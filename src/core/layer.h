@@ -14,6 +14,7 @@ namespace pkm {
 		virtual void on_detach()  {};
 		virtual void on_update() {};
 		virtual void on_event(Event& e) {}
+		virtual void on_render() {};
 		
 		inline const char* get_name() const { return m_debugname; }
 

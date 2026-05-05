@@ -58,51 +58,44 @@ namespace pkm {
         m_running = false;
     }
     
-    // should be owned by layers tbh
-    std::string PsApp::build_login_ui() {
+    void LoginOverlay::on_render() {
         std::stringstream ss;
 
-        ss << "\r=================================================\r\n";
-        ss << "\r  POKEMON SHOWDOWN CLI  |  LOGIN                \r\n";
-        ss << "\r=================================================\r\n\r\n";
+        if (m_is_logging_in) {
 
-        ss << "\r  Please log in to your account.\r\n\r\n";
+            ss << "\r=================================================\r\n";
+            ss << "\r  POKEMON SHOWDOWN CLI  |  LOGIN                \r\n";
+            ss << "\r=================================================\r\n\r\n";
 
-        ss << "\r  Type your username and press Enter.\r\n\r\n";
+            ss << "\r  Please log in to your account.\r\n\r\n";
 
-        ss << "\r--- AVAILABLE ACTIONS ---\r\n";
-        ss << "\r [b] Back to Main Menu\r\n";
-        ss << "\r [q] Quit\r\n";
+            ss << "\r  Type your username and press Enter.\r\n\r\n";
 
-        ss << "\r=================================================\r\n";
-        return ss.str();
-    }
+            ss << "\r--- AVAILABLE ACTIONS ---\r\n";
+            ss << "\r [b] Back to Main Menu\r\n";
+            ss << "\r [q] Quit\r\n";
 
-    std::string PsApp::build_signup_ui() {
-        std::stringstream ss;
+            ss << "\r=================================================\r\n";
+        } else {
+            ss << "\r=================================================\r\n";
+            ss << "\r  POKEMON SHOWDOWN CLI  |  SIGN-UP              \r\n";
+            ss << "\r=================================================\r\n\r\n";
 
-        ss << "\r=================================================\r\n";
-        ss << "\r  POKEMON SHOWDOWN CLI  |  SIGN-UP              \r\n";
-        ss << "\r=================================================\r\n\r\n";
+            ss << "\r  Create a new Pokemon Showdown account.\r\n\r\n";
 
-        ss << "\r  Create a new Pokemon Showdown account.\r\n\r\n";
+            ss << "\r  Type your desired username and press Enter.\r\n\r\n";
 
-        ss << "\r  Type your desired username and press Enter.\r\n\r\n";
+            ss << "\r--- AVAILABLE ACTIONS ---\r\n";
+            ss << "\r [b] Back to Main Menu\r\n";
+            ss << "\r [q] Quit\r\n";
 
-        ss << "\r--- AVAILABLE ACTIONS ---\r\n";
-        ss << "\r [b] Back to Main Menu\r\n";
-        ss << "\r [q] Quit\r\n";
-
-        ss << "\r=================================================\r\n";
-        return ss.str();
-    }
-
-    std::string PsApp::build_battle_ui() {
-        if (!m_battle_layer) {
-            PK_WARN("Can't build battle ui without battle layer!");
-            return "";
+            ss << "\r=================================================\r\n";
         }
+        std::cout << ss.str() << std::endl;
+    }
 
+   
+    void BattleLayer::on_render() {
         std::stringstream ss;
 
         ss << "\r=================================================\r\n";
@@ -152,10 +145,10 @@ namespace pkm {
         ss << "\r [move] <optional:tera> \r\n";
 
         ss << "\r=================================================\r\n";
-        return ss.str();
+        std::cout << ss.str() << std::endl;
     }
 
-    std::string PsApp::build_main_menu_ui() {
+    void MenuLayer::on_render() {
         std::stringstream ss;
 
         ss << "\r=================================================\r\n";
@@ -171,24 +164,11 @@ namespace pkm {
         ss << "\r [q] Quit\r\n";
 
         ss << "\r=================================================\r\n";
-        return ss.str();
+        std::cout << ss.str() << std::endl;
     }
 
     void PsApp::on_update() {
-        if (m_in_battle) {
-            std::string new_ui = build_battle_ui();
-            if (new_ui != m_ui) {  // only update if changed
-                m_ui = new_ui;
-                m_input->set_input_ui(m_ui);
-            }
-        } else {
-            // TODO: handle more cases for dif uis, also need to make other menus
-            std::string new_ui = build_main_menu_ui();
-            if (new_ui != m_ui) {
-                m_ui = new_ui;
-                m_input->set_input_ui(m_ui);
-            }
-        }
+        // TODO:  render ui of the top layer
     }
 
     void PsApp::on_render() {
@@ -217,7 +197,8 @@ namespace pkm {
                     break;
                 } 
             } else if (e->get_event_type() == EventType::Layer) {
-                LayerEvent* layer_event = dyanmic_cast<LayerEvent*>(e.get());     
+                LayerEvent* layer_event = dyanmic_cast<LayerEvent*>(e.get());   
+                Layer* layer = layer_event->get_layer_ptr();
                 m_layerstack.push_layer(layer_event.get_layer_ptr());
                 break;
             }
@@ -241,15 +222,15 @@ namespace pkm {
         PK_TRACE("Network Msg: {}", msg.type);
         if (msg.type == "updatesearch" && !msg.args.empty()) {
             auto j = nlohmann::json::parse(msg.args[0]);
-            if (!j["games"].is_null() && !m_in_battle) {
+            if (!j["games"].is_null()) {
                 std::string room = j["games"].begin().key();
+                // TODO: maybe send a join in the battle layer and just send an event here
                 m_client->send("|/join " + room);
             }
         } else if (msg.type == "win" || msg.type == "tie") {
-            if (m_battle_layer) {
-                m_layerstack.pop_layer(m_battle_layer);
-                PK_INFO("[App] Battle ended, returning to menu");
-            }
+            // TODO:
+            // send layer battle end event to let battle layer pop itsself
+            PK_INFO("[App] Battle ended, returning to menu");
         }
     }
 }

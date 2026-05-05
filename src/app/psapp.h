@@ -6,9 +6,12 @@
 #include "input/cl_input.h"
 #include "core/layerstack.h"
 #include "core/event/event.h"
+#include "core/event/event_sink.h"
 #include "core/event/command_event.h"
 #include "core/event/message_event.h"
+#include "core/event/login_event.h"
 #include "core/event/key_event.h"
+#include "core/event/layer_event.h"
 #include "util/util.h"
 
 #include <string>
@@ -21,8 +24,10 @@ namespace pkm {
     // handles lobby state: searching, waiting, main menu input
     class MenuLayer : public Layer {
     public:
-        MenuLayer(Ref<protocol::PsClient> client)
-            : Layer("MenuLayer"), m_client(client) {}
+        MenuLayer(Ref<protocol::PsClient> client, PsApp::EventSubmitFn submit)
+            :   Layer("MenuLayer") 
+              , m_client(client)
+              , m_submit(std::move(submit)) {}
 
         virtual void on_attach() override {
             PK_INFO("[MenuLayer] Attached");
@@ -36,9 +41,16 @@ namespace pkm {
                 const std::string& cmd = event.get_command();
                 if (cmd == "1") {
                     PK_INFO("[Menu] Searching for battle...");
+                    // TODO:
+                    // create battle layer then on attach it should call search
                     m_client->send("|/search gen9randombattle");
                 } else if (cmd == "2") {
-                    PK_INFO("[Menu] Adding login overlay"); 
+                    PK_INFO("[Menu] Adding login overlay for logging in"); 
+                    m_submit(MakeScope<LoginEvent(true)>);
+                } else if (cmd == "3") {
+                    PK_INFO("[Menu] Adding login overlay for signup"); 
+                    m_submit(MakeScope<LoginEvent(false)>);
+                    
                 } else if (cmd == "q") {
                     PK_INFO("[Menu] Quitting...");
                 }
@@ -56,14 +68,20 @@ namespace pkm {
             });
         }
 
+        virtual void on_render() override;
+
     private:
         Ref<protocol::PsClient> m_client;
+        PsApp::EventSubmitFn m_submit;
     };
 
 
     class LoginOverlay : public Layer {
         public:
-            LoginOverlay(Ref<protocol::PsClient> client) : m_client(client) {}
+            LoginOverlay(Ref<protocol::PsClient> client, bool is_login, PsApp::EventSubmitFn submit) : 
+                  m_client(client)
+                , m_is_logging_in(is_login) 
+                , m_submit(std::move(submit)) {}
 
             virtual void on_attach() override {
                 PK_INFO("[LoginOverlay] Attached");
@@ -81,16 +99,25 @@ namespace pkm {
                     const std::vector<std::string> tokens = tokenize(cmd);
                     PK_INFO("[LoginOverlay] Command Recieved: '{}'", cmd);
 
-                    if (tokens.size() != 1) { std::cout << "Invalid Input, enter again!\n"; return;}
+                    if (tokens.size() != 1) { 
+                        std::cout << "Invalid Input, enter again!\n"; 
+                        return true; 
+                    }
                     
                     if (!m_entered_username) {
-                        bool success = m_client->set_username(tokens[0]));
-                        if (!success) { std::cout << "Invalid username, retry!\n"; return; }
+                        bool success = m_client->set_username(tokens[0]);
+                        if (!success) { 
+                            std::cout << "Invalid username, retry!\n"; 
+                            return true; 
+                        }
                         std::cout << "Username set: " << tokens[0] << '\n'; 
                         m_entered_username = true;
                     } else {
-                        bool success = m_client->set_password(tokens[0]));
-                        if (!success) { std::cout << "Invalid password, retry!\n"; return;}
+                        bool success = m_client->set_password(tokens[0]);
+                        if (!success) { 
+                            std::cout << "Invalid password, retry!\n"; 
+                            return true; 
+                        }
                         std::cout << "Password set ...\n";
                         m_entered_password = true;
                     }
@@ -99,23 +126,28 @@ namespace pkm {
                 });
             }
 
+            virtual void on_render() override;
+
         private:
             Ref<protocol::PsClient> m_client;
+            bool m_is_logging_in{false};
             bool m_entered_username{false};
             bool m_entered_password{false};
+            PsApp::EventSubmitFn m_submit;
+
             
-            
-    }
+    };
 
     // BattleLayer - pushed on top when battle starts
     // owns BattleState and battle room ID
     // popped by PsApp when win/tie received
     class BattleLayer : public Layer {
     public:
-        BattleLayer(Ref<protocol::PsClient> client, const std::string& battle_room)
+        BattleLayer(Ref<protocol::PsClient> client, const std::string& battle_room, PsApp::EventSubmitFn submit)
             : Layer("BattleLayer")
             , m_client(client)
             , m_battle_room(battle_room)
+            , m_submit(std::move(submit))
         {}
 
         virtual void on_attach() override {
@@ -172,6 +204,8 @@ namespace pkm {
             });
         }
 
+        virtual void on_render() override;
+
         const protocol::BattleState& get_battle_state() const { return m_state; }
         const std::string& get_battle_room() const { return m_battle_room; }
 
@@ -182,6 +216,7 @@ namespace pkm {
         protocol::BattleState    m_state;
         std::string              m_battle_room;
         bool                     m_timer_active = false;
+        PsApp::EventSubmitFn     m_submit;
     };
 
 
@@ -189,8 +224,11 @@ namespace pkm {
 
 
     // PsApp, owns everything, drives the main loop
-    class PsApp {
+    class PsApp : public EventSink {
     public:
+
+        using EventSubmitFn = std::function<void(Scope<Event>)>;
+
         PsApp();
         ~PsApp() = default;
 
@@ -200,6 +238,10 @@ namespace pkm {
         void on_update();
         void on_render();
 
+        void submit(Event& e) override {
+            m_event_queue.push(std::move(e));
+        }
+
     private:
         void shutdown();
 
@@ -208,10 +250,7 @@ namespace pkm {
         void push_to_layers(Event& e);
         void on_network_message(const protocol::Message& msg);
 
-        std::string build_signup_ui()
-        std::string build_login_ui();
-        std::string build_battle_ui();
-        std::string build_main_menu_ui();
+        // move these into the layers
 
     private:
         Ref<protocol::PsClient>            m_client;
@@ -220,11 +259,10 @@ namespace pkm {
         LayerStack                         m_layerstack;
 
         pkm::SPSCQueue<protocol::Message>  m_network_queue{256};
-        // TODO: introduced multi threaded event queue, priority, etc
+        // TODO: introduce multi threaded event queue, priority, etc
         pkm::SPSCQueue<Scope<Event>>       m_event_queue{64};
 
         bool         m_running;
-        std::string  m_ui;
     };
 
 }

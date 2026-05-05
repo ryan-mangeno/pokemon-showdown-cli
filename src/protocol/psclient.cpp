@@ -101,13 +101,16 @@ namespace pkm::protocol {
             return;
         }
 
-        std::string token = pkm::net::request_assertion(user, pass, full_challstr);
+        std::string token = pkm::net::request_assertion(m_username, m_password, full_challstr);
         if (!token.empty()) {
             PK_INFO("Verifying challstr...");
-            send(std::string("|/trn ") + user + ",0," + token);
+            send(std::string("|/trn ") + m_username + ",0," + token);
         } else {
             PK_ERROR("Unable to request assertion");
         }
+        // we only need to verify chall str once so we reset these vars for securit
+        memset(m_username, 0, sizeof(m_username));
+        memset(m_password, 0, sizeof(m_password));
     }
 
     void PsClient::on_update_user(const Message& msg) {
