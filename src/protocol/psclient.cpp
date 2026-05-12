@@ -95,22 +95,33 @@ namespace pkm::protocol {
         if (m_logged_in) return;
 
         std::string full_challstr = msg.args[0] + "|" + msg.args[1];
+        m_chall_str = full_challstr;
+    }
 
+    bool PsClient::try_login() {
+        if (m_chall_str.empty()) {
+            PK_WARN("Challstr hasn't been sent yet, can't login/signup");
+            return false;
+        }
         if (m_username[0] == '\0' || m_password[0] == '\0') {
-            PK_ERROR("User not logged in before chall str!");
-            return;
+            PK_ERROR("User not logged, but challstr has been sent!");
+            return false;
         }
 
-        std::string token = pkm::net::request_assertion(m_username, m_password, full_challstr);
+        std::string token = pkm::net::request_assertion(m_username, m_password, m_chall_str);
         if (!token.empty()) {
             PK_INFO("Verifying challstr...");
             send(std::string("|/trn ") + m_username + ",0," + token);
         } else {
             PK_ERROR("Unable to request assertion");
+            return false;
         }
         // we only need to verify chall str once so we reset these vars for securit
         memset(m_username, 0, sizeof(m_username));
         memset(m_password, 0, sizeof(m_password));
+        m_chall_str.clear();
+        m_chall_str.shrink_to_fit();
+        return true;
     }
 
     void PsClient::on_update_user(const Message& msg) {

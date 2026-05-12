@@ -18,6 +18,7 @@ namespace pkm::protocol {
             PsClient(); 
             ~PsClient() = default;
 
+            bool try_login();
             bool init();
             void start();           // connect + spawn network thread, returns immediately
             void stop();            // signal shutdown + join network thread
@@ -70,6 +71,7 @@ namespace pkm::protocol {
             bool m_searching;
             bool m_in_battle;
             std::string m_battle_room;
+            std::string m_chall_str;
             char m_username[32]{};
             char m_password[32]{};
 

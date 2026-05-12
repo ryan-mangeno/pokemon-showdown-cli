@@ -24,8 +24,9 @@ namespace pkm {
         public:
             SPSCQueue(size_t capacity) noexcept : m_capacity(capacity), m_queue(capacity), m_head(0), m_tail(0) {}
             ~SPSCQueue() = default;
+            
 
-            bool push(T& val) noexcept {
+            bool push(T val) noexcept {
                 size_t head = m_head.load(std::memory_order_acquire);
                 size_t tail = m_tail.load(std::memory_order_relaxed);
                     

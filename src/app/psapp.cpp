@@ -6,12 +6,13 @@
 #include "core/event/message_event.h"
 #include "core/event/command_event.h"
 #include "core/event/key_event.h"
+#include "core/event/battle_event.h"
 
 #include <nlohmann/json.hpp>
 
 namespace pkm {
 
-    PsApp::PsApp() : m_running(false), m_in_battle(false) {}
+    PsApp::PsApp() : m_running(false), m_dirty_ui(false) {}
 
     bool PsApp::init() {
         m_client = MakeRef<protocol::PsClient>();
@@ -21,14 +22,17 @@ namespace pkm {
         }
 
         // menu is always at the bottom of layer stack
-        m_layerstack.push_layer(new MenuLayer(m_client));
+        MenuLayer* menu = new MenuLayer(m_client, [this](Scope<Event> e) {
+            m_event_queue.push(std::move(e));
+        });
+        m_event_queue.push(MakeScope<LayerPushEvent>(menu));
 
         m_input = MakeScope<CLInput>();
         m_input->set_callback([this](Event& e) {
             EventDispatcher dispatcher(e);
             dispatcher.Dispatch<CommandEvent>([this](CommandEvent& e) {
                 Scope<Event> event = MakeScope<CommandEvent>(e);
-                m_event_queue.push(event);
+                m_event_queue.push(std::move(event));
                 return true;
             });
         });
@@ -43,16 +47,15 @@ namespace pkm {
 
         while (m_running) {
             on_update();
-            on_render();
-            process_network();
             poll();
-            std::this_thread::yield();
+            on_render();
         }
 
         shutdown();
     }
 
     void PsApp::shutdown() {
+        PK_INFO("Shutting Down PsApp ...");
         m_input->stop();
         m_client->stop();
         m_running = false;
@@ -61,15 +64,14 @@ namespace pkm {
     void LoginOverlay::on_render() {
         std::stringstream ss;
 
-        if (m_is_logging_in) {
-
+        if (!m_is_signup) {
             ss << "\r=================================================\r\n";
             ss << "\r  POKEMON SHOWDOWN CLI  |  LOGIN                \r\n";
             ss << "\r=================================================\r\n\r\n";
 
             ss << "\r  Please log in to your account.\r\n\r\n";
 
-            ss << "\r  Type your username and press Enter.\r\n\r\n";
+            ss << "\r  Type your username and press [Enter].\r\n\r\n";
 
             ss << "\r--- AVAILABLE ACTIONS ---\r\n";
             ss << "\r [b] Back to Main Menu\r\n";
@@ -83,7 +85,7 @@ namespace pkm {
 
             ss << "\r  Create a new Pokemon Showdown account.\r\n\r\n";
 
-            ss << "\r  Type your desired username and press Enter.\r\n\r\n";
+            ss << "\r  Type your desired username and press [Enter].\r\n\r\n";
 
             ss << "\r--- AVAILABLE ACTIONS ---\r\n";
             ss << "\r [b] Back to Main Menu\r\n";
@@ -99,13 +101,11 @@ namespace pkm {
         std::stringstream ss;
 
         ss << "\r=================================================\r\n";
-        ss << "\r  POKEMON SHOWDOWN CLI  | Room: " << m_battle_layer->get_battle_room() << "\r\n";
+        ss << "\r  POKEMON SHOWDOWN CLI  | Room: " << m_battle_room << "\r\n";
         ss << "\r=================================================\r\n\r\n";
 
-        const protocol::BattleState& bs = m_battle_layer->get_battle_state();
-
         ss << "\r--- OPPONENT TEAM ---\r\n";
-        const auto& team1 = bs.opponent_team();
+        const auto& team1 = m_state.opponent_team();
         for (size_t i = 0; i < team1.size(); i++) {
             const auto& p = team1[i];
             ss << "\r [s" << (i+1) << "] "
@@ -115,19 +115,19 @@ namespace pkm {
         ss << "\r\n";
 
         ss << "\r--- YOUR TEAM ---\r\n";
-        const auto& team2 = bs.your_team();
+        const auto& team2 = m_state.your_team();
         for (size_t i = 0; i < team2.size(); i++) {
             const auto& p = team2[i];
             ss << "\r [s" << (i+1) << "] "
             << (p.active ? "*ACTIVE* " : "         ")
             << p.name << " (" << p.hp_current << "/" << p.hp_max << " HP)"
-            << (p.active ? (" : Tera - " + bs.active_pokemon().tera_type)  : "")
+            << (p.active ? (" : Tera - " + m_state.active_pokemon().tera_type)  : "")
             << "\r\n";
         }
         ss << "\r\n";
 
         ss << "\r--- AVAILABLE ACTIONS ---\r\n";
-        const auto& moves = bs.available_moves();
+        const auto& moves = m_state.available_moves();
         if (moves.empty()) {
             ss << "\r  Waiting for server...\r\n";
         } else {
@@ -168,16 +168,22 @@ namespace pkm {
     }
 
     void PsApp::on_update() {
-        // TODO:  render ui of the top layer
+        process_network();
     }
 
     void PsApp::on_render() {
+        if (m_dirty_ui && !m_layerstack.empty()) {
+            // TODO: add a better way to get top of stack
+            // also should add some additional error handling, this is primitive
+            auto top_layer = m_layerstack.back(); 
+            top_layer->on_render();
+            m_dirty_ui = false;
+        }
     }
 
     void PsApp::process_network() {
         protocol::Message msg;
         while (m_client->poll(msg)) {
-            on_network_message(msg);
             MessageEvent e(msg);
             push_to_layers(e);
         }
@@ -185,23 +191,68 @@ namespace pkm {
 
     void PsApp::poll() {
         Scope<Event> e = nullptr;
-        while (m_event_queue.pop(e)) {
+        bool exit = false;
+        while (m_event_queue.pop(e) && !exit) {
             PK_INFO("[App] Got event: '{}'", e->get_name());
 
-            if (e->get_event_type() == EventType::Command) {
-                CommandEvent* cmd_event = dynamic_cast<CommandEvent*>(e.get());
-                const std::string& cmd = cmd_event->get_command();
-                if (cmd == "q") {
-                    PK_INFO("Quitting...");
-                    m_running = false;
+            switch(e->get_event_type()) {
+                case EventType::Command: { 
+                    CommandEvent* cmd_event = dynamic_cast<CommandEvent*>(e.get());
+                    const std::string& cmd = cmd_event->get_command();
+                    if (cmd == "q") {
+                        PK_INFO("Quitting...");
+                        m_running = false;
+                        exit = true;
+                    } 
+                    break;
+                }
+
+                case EventType::LayerPush: {
+                    LayerPushEvent* layer_event = dynamic_cast<LayerPushEvent*>(e.get());   
+                    Layer* layer = layer_event->get_layer_ptr();
+                    m_layerstack.push_layer(layer);
+                    m_dirty_ui = true;
+                    break;
+                }
+
+                case EventType::LayerPop: {
+                    LayerPopEvent* layer_event = dynamic_cast<LayerPopEvent*>(e.get());   
+                    Layer* layer = layer_event->get_layer_ptr();
+                    bool is_overlay = layer_event->is_overlay();
+                    is_overlay ? m_layerstack.pop_overlay(layer) : m_layerstack.pop_layer(layer);
+                    m_dirty_ui = true; 
+                    break;
+                }
+
+                case EventType::Login: {
+                    LoginEvent* login_event = dynamic_cast<LoginEvent*>(e.get());   
+                    bool is_signup = login_event->is_signup();
+                    LoginOverlay* login = new LoginOverlay(m_client, is_signup, [this](Scope<Event> e) {
+                        m_event_queue.push(std::move(e));
+                    });
+                    m_layerstack.push_overlay(login);
+                    m_dirty_ui = true; 
+                    break;
+                }
+
+                case EventType::BattleSearch: {
+                    BattleSearchEvent* battle_event = dynamic_cast<BattleSearchEvent*>(e.get());   
+                    BattleLayer* battle = new BattleLayer(m_client, [this](Scope<Event> e) {
+                        m_event_queue.push(std::move(e));
+                    });
+                    m_layerstack.push_overlay(battle);
+                    m_dirty_ui = true; 
                     break;
                 } 
-            } else if (e->get_event_type() == EventType::Layer) {
-                LayerEvent* layer_event = dyanmic_cast<LayerEvent*>(e.get());   
-                Layer* layer = layer_event->get_layer_ptr();
-                m_layerstack.push_layer(layer_event.get_layer_ptr());
-                break;
-            }
+
+                case EventType::BattleJoin: {
+                    m_dirty_ui = true; 
+                    break;
+                }
+
+                default:
+                    break;
+            } 
 
             push_to_layers(*e);
         }
@@ -210,27 +261,9 @@ namespace pkm {
 
     void PsApp::push_to_layers(Event& e) {
         // dispatch top-down, stop if handled
-        for (auto it = m_layerstack.end(); it != m_layerstack.begin();) {
-            (*(--it))->on_event(e);
+        for (size_t i = m_layerstack.size(); i > 0; --i) {
+            m_layerstack[i - 1]->on_event(e);
             if (e.get_handled()) break;
-        }
-    }
-
-    void PsApp::on_network_message(const protocol::Message& msg) {
-        // PsApp handles structural decisions, push/pop layers
-        // everything else goes to layers via MessageEvent
-        PK_TRACE("Network Msg: {}", msg.type);
-        if (msg.type == "updatesearch" && !msg.args.empty()) {
-            auto j = nlohmann::json::parse(msg.args[0]);
-            if (!j["games"].is_null()) {
-                std::string room = j["games"].begin().key();
-                // TODO: maybe send a join in the battle layer and just send an event here
-                m_client->send("|/join " + room);
-            }
-        } else if (msg.type == "win" || msg.type == "tie") {
-            // TODO:
-            // send layer battle end event to let battle layer pop itsself
-            PK_INFO("[App] Battle ended, returning to menu");
         }
     }
 }

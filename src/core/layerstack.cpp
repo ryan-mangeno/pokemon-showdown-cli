@@ -10,10 +10,15 @@ namespace pkm {
 	}
 
 	LayerStack::~LayerStack() {
-		for (Layer* layer : m_layers) {
-			layer->on_detach();
-			delete layer;
+		for (int i = m_layers.size() - 1; i >= 0; i--) {
+			Layer* layer = m_layers[i];
+			if (layer) {
+				layer->on_detach();
+				delete layer;
+				m_layers[i] = nullptr; 
+			}
 		}
+		m_layers.clear();
 	}
 	
 	void LayerStack::push_layer(Layer* layer) {
@@ -27,24 +32,22 @@ namespace pkm {
 	}
 
 	void LayerStack::pop_layer(Layer* layer) {
-		auto it = std::find(m_layers.begin(), m_layers.end(), layer);
+		auto it = std::find(m_layers.begin(), m_layers.begin() + m_layer_iterator_offset, layer);
 		if (it != m_layers.end()) {
-			layer->on_detach();
-			m_layers.erase(it);
-
-			// we wont need to check for bounds, in the case when we remove first element
-			// m_layer_iterator_offset will be offset to then next available slot for a layer
-			// ... it will be at offset : 1, if there is 1 layer, so when we decrement
-			// there will be no more layers and we will be at offset 0, being correct offset
+			(*it)->on_detach();
+			delete *it;          
+			m_layers.erase(it);   
 			m_layer_iterator_offset--;
 		}
 	}
 
 	void LayerStack::pop_overlay(Layer* overlay) {
-		auto it = std::find(m_layers.begin(), m_layers.end(), overlay);
+		auto it = std::find(m_layers.begin() + m_layer_iterator_offset, m_layers.end(), overlay);
 		if (it != m_layers.end()) {
-			overlay->on_detach();
-			m_layers.erase(it);
+			(*it)->on_detach();
+			delete *it;          
+			m_layers.erase(it);   
+			m_layer_iterator_offset--;
 		}
 	}
 

@@ -15,7 +15,8 @@ namespace pkm {
 		WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
 		AppTick, AppUpdate, AppRender,
 		KeyPressed, KeyReleased, KeyTyped,
-		Command, Message, Layer, Login,
+		Command, Message, Layer, LayerPush, LayerPop, Login,
+		BattleSearch, BattleJoin,
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
 	};
 

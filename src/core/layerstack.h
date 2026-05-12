@@ -23,6 +23,10 @@ namespace pkm {
 		std::vector<Layer*>::iterator begin() { return m_layers.begin(); }
 		std::vector<Layer*>::iterator end() { return m_layers.end(); }
 
+		bool empty() const noexcept { return m_layers.begin() == m_layers.end(); }
+		Layer* operator[](size_t index) { return m_layers[index]; }
+        Layer* back() { return m_layers.back(); }
+		size_t size() const { return m_layers.size(); }
 	private:
 		
 		// every frame these need to be iterated over for things like updates
