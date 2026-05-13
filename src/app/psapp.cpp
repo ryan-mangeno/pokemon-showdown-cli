@@ -25,7 +25,7 @@ namespace pkm {
         MenuLayer* menu = new MenuLayer(m_client, [this](Scope<Event> e) {
             m_event_queue.push(std::move(e));
         });
-        m_event_queue.push(MakeScope<LayerPushEvent>(menu));
+        m_event_queue.push(MakeScope<LayerPushEvent>(menu, false));
 
         m_input = MakeScope<CLInput>();
         m_input->set_callback([this](Event& e) {
@@ -210,7 +210,8 @@ namespace pkm {
                 case EventType::LayerPush: {
                     LayerPushEvent* layer_event = dynamic_cast<LayerPushEvent*>(e.get());   
                     Layer* layer = layer_event->get_layer_ptr();
-                    m_layerstack.push_layer(layer);
+                    bool is_overlay = layer_event->is_overlay();
+                    is_overlay ? m_layerstack.push_overlay(layer) : m_layerstack.push_layer(layer);
                     m_dirty_ui = true;
                     break;
                 }

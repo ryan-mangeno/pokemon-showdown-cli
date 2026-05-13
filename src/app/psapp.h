@@ -92,7 +92,7 @@ namespace pkm {
                     m_submit(MakeScope<LoginEvent>(true));
                 } else if (cmd == "q") {
                     PK_INFO("[Menu] Quitting...");
-                    m_submit(MakeScope<LayerPopEvent>(this, true));
+                    m_submit(MakeScope<LayerPopEvent>(this, false));
                     return false; // dont consume, let any other layers pop
                 }
                 return true;
@@ -141,34 +141,34 @@ namespace pkm {
                     PK_INFO("[LoginOverlay] Command Recieved: '{}'", cmd);
 
                     if (tokens.size() != 1) { 
-                        std::cout << "Invalid Input, enter again!\n"; 
+                        std::cout << "\rInvalid Input, enter again!\r\n"; 
                         return true; 
                     }
                     
                     if (!m_entered_username) {
                         bool success = m_client->set_username(tokens[0]);
                         if (!success) { 
-                            std::cout << "Invalid username, retry!\n"; 
+                            std::cout << "\rInvalid username, retry!\r\n"; 
                             return true; 
                         }
-                        std::cout << "Username set: " << tokens[0] << " ...\nEnter password:\n"; 
+                        std::cout << "\rUsername set, hello " << tokens[0] << "! \r\nEnter password: " << std::flush; 
                         m_entered_username = true;
                     } else {
                         bool success = m_client->set_password(tokens[0]);
                         if (!success) { 
-                            std::cout << "Invalid password, retry!\n"; 
+                            std::cout << "\rInvalid password, retry!\r\n"; 
                             return true; 
                         }
-                        std::cout << "Password set ...\n";
+                        std::cout << "\rPassword set ...\r\n";
                         m_entered_password = true;
                         bool login_success = m_client->try_login();
                         if (!login_success) {
                             PK_ERROR("Login failed");
-                            std::cout << "Login failed, please retry!\n"; 
+                            std::cout << "\rLogin failed, please retry!\r\n"; 
                             m_entered_username = false;
                             m_entered_password = false;
                         } else {
-                            std::cout << "Login Successful!\n"; 
+                            std::cout << "\rLogin Successful!\r\n\r\n"; 
                             m_submit(MakeScope<LayerPopEvent>(this, true));
                         }
                     }
