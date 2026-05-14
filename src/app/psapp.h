@@ -14,6 +14,7 @@
 #include "core/event/layer_event.h"
 #include "core/event/battle_event.h"
 #include "util/util.h"
+#include "battle/format_registry.h"
 
 #include <string>
 #include <sstream>
@@ -80,10 +81,12 @@ namespace pkm {
             dispatcher.Dispatch<CommandEvent>([this](CommandEvent& event) {
                 PK_INFO("[MenuLayer] Command received: '{}'", event.get_command());
                 const std::string& cmd = event.get_command();
+                const auto& fmts = battle::get_formats();
                 if (cmd == "1") {
                     PK_INFO("[Menu] Searching for battle...");
                     m_submit(MakeScope<BattleSearchEvent>());
-                    m_client->send("|/search gen9randombattle");
+                    std::string ptcl = fmts.at("Random Battle").protocol_id;
+                    m_client->send("|/search " + ptcl);
                 } else if (cmd == "2") {
                     PK_INFO("[Menu] Adding login overlay for logging in"); 
                     m_submit(MakeScope<LoginEvent>(false));

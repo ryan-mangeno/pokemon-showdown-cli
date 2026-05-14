@@ -157,6 +157,7 @@ namespace pkm {
 
         ss << "\r  Welcome!\r\n\r\n";
 
+        // TODO: add abilty to list battle options then adding an overlay 
         ss << "\r--- AVAILABLE ACTIONS ---\r\n";
         ss << "\r [1] Search for Random Battle\r\n";
         ss << "\r [2] Login\r\n";
