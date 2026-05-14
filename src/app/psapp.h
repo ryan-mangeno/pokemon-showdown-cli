@@ -81,12 +81,9 @@ namespace pkm {
             dispatcher.Dispatch<CommandEvent>([this](CommandEvent& event) {
                 PK_INFO("[MenuLayer] Command received: '{}'", event.get_command());
                 const std::string& cmd = event.get_command();
-                const auto& fmts = battle::get_formats();
                 if (cmd == "1") {
                     PK_INFO("[Menu] Searching for battle...");
                     m_submit(MakeScope<BattleSearchEvent>());
-                    std::string ptcl = fmts.at("Random Battle").protocol_id;
-                    m_client->send("|/search " + ptcl);
                 } else if (cmd == "2") {
                     PK_INFO("[Menu] Adding login overlay for logging in"); 
                     m_submit(MakeScope<LoginEvent>(false));
@@ -204,7 +201,10 @@ namespace pkm {
         {}
 
         virtual void on_attach() override {
-            PK_INFO("[BattleLayer] Attached - room: {}", m_battle_room);
+            const auto& fmts = battle::get_formats();
+            std::string ptcl = fmts.at("Random Battle").protocol_id;
+            m_client->send("|/search " + ptcl);
+            PK_INFO("[BattleLayer] Attached", m_battle_room);
         }
 
         virtual void on_detach() override {
